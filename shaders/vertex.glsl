@@ -13,7 +13,6 @@ vec3 colors[] = vec3[](
 );
 
 layout(location = 0) out vec3 fragColor;
-layout(location = 1) out vec3 pos;
 
 void main()
 {
