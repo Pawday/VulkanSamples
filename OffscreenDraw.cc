@@ -535,71 +535,70 @@ int main()
         return D->createPipelineLayout(p_layout_ci);
     }();
 
-    vk::raii::Pipeline pipeline =
-        [&D, &render_pass, &pipeline, &pipeline_layout]() {
-            vk::ShaderModuleCreateInfo v_shader_ci;
-            v_shader_ci.setCode(vertex_shader_code_view);
-            auto v_shader = D->createShaderModule(v_shader_ci);
-            vk::ShaderModuleCreateInfo f_shader_ci;
-            f_shader_ci.setCode(fragment_shader_code_view);
-            auto f_shader = D->createShaderModule(f_shader_ci);
+    vk::raii::Pipeline pipeline = [&D, &render_pass, &pipeline_layout]() {
+        vk::ShaderModuleCreateInfo v_shader_ci;
+        v_shader_ci.setCode(vertex_shader_code_view);
+        auto v_shader = D->createShaderModule(v_shader_ci);
+        vk::ShaderModuleCreateInfo f_shader_ci;
+        f_shader_ci.setCode(fragment_shader_code_view);
+        auto f_shader = D->createShaderModule(f_shader_ci);
 
-            std::array<vk::PipelineShaderStageCreateInfo, 2> stages;
-            stages[0].stage = vk::ShaderStageFlagBits::eVertex;
-            stages[0].module = v_shader;
-            stages[0].pName = "main";
+        std::array<vk::PipelineShaderStageCreateInfo, 2> stages;
+        stages[0].stage = vk::ShaderStageFlagBits::eVertex;
+        stages[0].module = v_shader;
+        stages[0].pName = "main";
 
-            stages[1].stage = vk::ShaderStageFlagBits::eFragment;
-            stages[1].module = f_shader;
-            stages[1].pName = "main";
+        stages[1].stage = vk::ShaderStageFlagBits::eFragment;
+        stages[1].module = f_shader;
+        stages[1].pName = "main";
 
-            vk::GraphicsPipelineCreateInfo pipeline_ci{};
-            pipeline_ci.layout = pipeline_layout;
-            pipeline_ci.renderPass = render_pass;
-            pipeline_ci.setStages(stages);
+        vk::GraphicsPipelineCreateInfo pipeline_ci{};
+        pipeline_ci.layout = pipeline_layout;
+        pipeline_ci.renderPass = render_pass;
+        pipeline_ci.setStages(stages);
 
-            vk::PipelineVertexInputStateCreateInfo vertext_input_state{};
-            pipeline_ci.pVertexInputState = &vertext_input_state;
+        vk::PipelineVertexInputStateCreateInfo vertext_input_state{};
+        pipeline_ci.pVertexInputState = &vertext_input_state;
 
-            vk::PipelineInputAssemblyStateCreateInfo in_asm_state{};
-            in_asm_state.topology = vk::PrimitiveTopology::eTriangleList;
-            pipeline_ci.pInputAssemblyState = &in_asm_state;
+        vk::PipelineInputAssemblyStateCreateInfo in_asm_state{};
+        in_asm_state.topology = vk::PrimitiveTopology::eTriangleList;
+        pipeline_ci.pInputAssemblyState = &in_asm_state;
 
-            vk::PipelineMultisampleStateCreateInfo m_state{};
-            pipeline_ci.pMultisampleState = &m_state;
+        vk::PipelineMultisampleStateCreateInfo m_state{};
+        pipeline_ci.pMultisampleState = &m_state;
 
-            vk::PipelineRasterizationStateCreateInfo raster_state{};
-            raster_state.polygonMode = vk::PolygonMode::eFill;
-            raster_state.lineWidth = 1.0;
-            pipeline_ci.pRasterizationState = &raster_state;
+        vk::PipelineRasterizationStateCreateInfo raster_state{};
+        raster_state.polygonMode = vk::PolygonMode::eFill;
+        raster_state.lineWidth = 1.0;
+        pipeline_ci.pRasterizationState = &raster_state;
 
-            std::array<vk::PipelineColorBlendAttachmentState, 1>
-                blend_attachments{};
-            blend_attachments[0].blendEnable = false;
-            {
-                using C = vk::ColorComponentFlagBits;
-                blend_attachments[0].colorWriteMask |= C::eR;
-                blend_attachments[0].colorWriteMask |= C::eG;
-                blend_attachments[0].colorWriteMask |= C::eB;
-                blend_attachments[0].colorWriteMask |= C::eA;
-            }
-            vk::PipelineColorBlendStateCreateInfo blend_state{};
-            blend_state.setAttachments(blend_attachments);
-            pipeline_ci.pColorBlendState = &blend_state;
+        std::array<vk::PipelineColorBlendAttachmentState, 1>
+            blend_attachments{};
+        blend_attachments[0].blendEnable = false;
+        {
+            using C = vk::ColorComponentFlagBits;
+            blend_attachments[0].colorWriteMask |= C::eR;
+            blend_attachments[0].colorWriteMask |= C::eG;
+            blend_attachments[0].colorWriteMask |= C::eB;
+            blend_attachments[0].colorWriteMask |= C::eA;
+        }
+        vk::PipelineColorBlendStateCreateInfo blend_state{};
+        blend_state.setAttachments(blend_attachments);
+        pipeline_ci.pColorBlendState = &blend_state;
 
-            std::array<vk::DynamicState, 2> dyn_state_types{
-                vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-            vk::PipelineDynamicStateCreateInfo dyn_state{};
-            dyn_state.setDynamicStates(dyn_state_types);
-            pipeline_ci.pDynamicState = &dyn_state;
+        std::array<vk::DynamicState, 2> dyn_state_types{
+            vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+        vk::PipelineDynamicStateCreateInfo dyn_state{};
+        dyn_state.setDynamicStates(dyn_state_types);
+        pipeline_ci.pDynamicState = &dyn_state;
 
-            vk::PipelineViewportStateCreateInfo viewport_state{};
-            viewport_state.viewportCount = 1;
-            viewport_state.scissorCount = 1;
-            pipeline_ci.pViewportState = &viewport_state;
+        vk::PipelineViewportStateCreateInfo viewport_state{};
+        viewport_state.viewportCount = 1;
+        viewport_state.scissorCount = 1;
+        pipeline_ci.pViewportState = &viewport_state;
 
-            return D->createGraphicsPipeline(nullptr, pipeline_ci);
-        }();
+        return D->createGraphicsPipeline(nullptr, pipeline_ci);
+    }();
 
     vk::raii::Framebuffer fbm = [&D, &render_pass, &image]() {
         vk::FramebufferCreateInfo fbm_ci{};
