@@ -43,8 +43,8 @@ struct Msgr
             }
 
             if (start[len] == 0) {
-                std::span<const char> msg{start, len};
-                msg_prefixed(msg);
+                std::span<const char> msg_line{start, len};
+                msg_prefixed(msg_line);
                 return;
             }
 
@@ -52,8 +52,8 @@ struct Msgr
                 continue;
             }
 
-            std::span<const char> msg{start, len};
-            msg_prefixed(msg);
+            std::span<const char> msg_line{start, len};
+            msg_prefixed(msg_line);
 
             if (start[len] == 0) {
                 return;
@@ -81,11 +81,11 @@ struct Msgr
 struct DeviceWrap
 {
     DeviceWrap(
-        vk::raii::Device m_dev,
-        std::vector<vk::raii::Queue> m_graphic_queues,
+        vk::raii::Device dev,
+        std::vector<vk::raii::Queue> graphic_queues,
         vk::raii::PhysicalDevice phy)
-        : m_dev(std::move(m_dev)),
-          m_graphic_queues(std::move(m_graphic_queues)), m_phy(phy)
+        : m_dev(std::move(dev)), m_graphic_queues(std::move(graphic_queues)),
+          m_phy(phy)
     {
     }
 
@@ -173,8 +173,6 @@ struct DeviceLocalImage
               std::optional<uint32_t> capable_device_local_mem_type_idx;
               for (uint8_t mem_type_idx = 0; mem_type_idx < mem_types.size();
                    mem_type_idx++) {
-
-                  auto mem_type_flags = mem_types[mem_type_idx].propertyFlags;
 
                   uint32_t memt_mask = 1;
                   memt_mask <<= mem_type_idx;
