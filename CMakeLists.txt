@@ -18,12 +18,28 @@ function(target_cxx23 tgt)
     set_property(TARGET ${tgt} PROPERTY CXX_EXTENSIONS ON)
 endfunction()
 
+function(target_strict_compilation TARGET)
+    set(WSHADOW_WARN_OPT "-Wshadow")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        set(WSHADOW_WARN_OPT "-Wshadow-all")
+    endif()
+
+    target_compile_options(${TARGET} PRIVATE
+        "-Wall"
+        "-Wextra"
+        "-pedantic-errors"
+        ${WSHADOW_WARN_OPT}
+        "-Werror"
+    )
+endfunction()
+
 add_subdirectory(deps)
 add_subdirectory(shaders)
 
 
 add_executable(${PREF}OffscreenDraw OffscreenDraw.cc)
 target_cxx23(${PREF}OffscreenDraw)
+target_strict_compilation(${PREF}OffscreenDraw)
 target_link_libraries(${PREF}OffscreenDraw PRIVATE 
     ${PREF}vk_headers
     ${PREF}shaders
