@@ -6,7 +6,7 @@ function(add_glsl_shader TARGET_NAME SHADER_FILE STAGE_TYPE)
 
 
     set(COMPILE_COMMAND_DEBUG_FLAG "")
-    string(TOUPPER ${CMAKE_BUILD_TYPE} BT_UPPER)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" BT_UPPER)
     if ("${BT_UPPER}" STREQUAL "DEBUG")
         set(COMPILE_COMMAND_DEBUG_FLAG "-gVS")
     endif()
