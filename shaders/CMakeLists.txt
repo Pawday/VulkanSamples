@@ -4,9 +4,18 @@ function(add_glsl_shader TARGET_NAME SHADER_FILE STAGE_TYPE)
     file(MAKE_DIRECTORY ${GLSLC_OUTPUT_FILE_DIR})
     set(GLSLC_OUTPUT_FILE     "${GLSLC_OUTPUT_FILE_DIR}/${SHADER_FILE}.spv.hex")
 
+
+    set(COMPILE_COMMAND_DEBUG_FLAG "")
+    string(TOUPPER ${CMAKE_BUILD_TYPE} BT_UPPER)
+    if ("${BT_UPPER}" STREQUAL "DEBUG")
+        set(COMPILE_COMMAND_DEBUG_FLAG "-gVS")
+    endif()
+
+    set(COMPILE_COMMAND "$<TARGET_FILE:${PREF}host_tool_glslang>" "${COMPILE_COMMAND_DEBUG_FLAG}" "-V100" "--quiet" "-S" "${STAGE_TYPE}" "${INPUT_FILE}" "-x" "-o" "${GLSLC_OUTPUT_FILE}")
+
     add_custom_command(
         OUTPUT ${GLSLC_OUTPUT_FILE}
-        COMMAND "$<TARGET_FILE:${PREF}host_tool_glslang>" "-V100" "--quiet" "-S" "${STAGE_TYPE}" "${INPUT_FILE}" "-x" "-o" "${GLSLC_OUTPUT_FILE}"
+        COMMAND ${COMPILE_COMMAND}
         DEPENDS ${INPUT_FILE}
         COMMENT "glslang ${STAGE_TYPE} ${SHADER_FILE}"
     )
