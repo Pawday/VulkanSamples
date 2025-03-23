@@ -37,3 +37,6 @@ endfunction()
 
 add_glsl_shader(${PREF}shaders vertex.glsl vert)
 add_glsl_shader(${PREF}shaders fragment.glsl frag)
+
+add_glsl_shader(${PREF}shaders trsq_vertex.glsl vert)
+add_glsl_shader(${PREF}shaders trsq_fragment.glsl frag)

@@ -308,12 +308,12 @@ struct HostVisMemBuffer
 
 namespace {
 uint32_t vertex_shader_code[] = {
-#include "vertex.glsl.spv.hex"
+#include "trsq_vertex.glsl.spv.hex"
 };
 std::span<uint32_t> vertex_shader_code_view{vertex_shader_code};
 
 uint32_t fragment_shader_code[] = {
-#include "fragment.glsl.spv.hex"
+#include "trsq_fragment.glsl.spv.hex"
 };
 std::span<uint32_t> fragment_shader_code_view{fragment_shader_code};
 
