@@ -1,9 +1,9 @@
-#include <exception>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <cerrno>
@@ -15,13 +15,16 @@
 #include <wayland-client-protocol.h>
 #include <xdg-shell.h>
 
+namespace {
+
 struct RegistryListener
 {
-    RegistryListener() = default;
     RegistryListener(const RegistryListener &) = delete;
-    RegistryListener(RegistryListener &&) = delete;
     RegistryListener &operator=(const RegistryListener &) = delete;
-    RegistryListener &operator=(RegistryListener &&) = delete;
+
+    RegistryListener() = default;
+    RegistryListener(RegistryListener &&) = default;
+    RegistryListener &operator=(RegistryListener &&) = default;
     ~RegistryListener();
 
     static wl_registry_listener c_vtable;
@@ -128,11 +131,34 @@ struct Handles
 {
     Handles() = default;
     Handles(const Handles &) = delete;
-    Handles(Handles &&) = delete;
     Handles &operator=(const Handles &) = delete;
-    Handles &operator=(Handles &&) = delete;
 
-    void reset();
+    Handles(Handles &&o) noexcept
+        : display(o.display), registry(o.registry), surface(o.surface),
+          xdg_surface(o.xdg_surface), top_level(o.top_level)
+    {
+        o.display = nullptr;
+        o.registry = nullptr;
+        o.surface = nullptr;
+        o.xdg_surface = nullptr;
+        o.top_level = nullptr;
+    }
+    Handles &operator=(Handles &&o) noexcept
+    {
+        if (this == ::std::addressof(o)) {
+            return *this;
+        }
+
+        std::swap(display, o.display);
+        std::swap(registry, o.registry);
+        std::swap(surface, o.surface);
+        std::swap(xdg_surface, o.xdg_surface);
+        std::swap(top_level, o.top_level);
+
+        return *this;
+    }
+
+    void reset() noexcept;
 
     ~Handles()
     {
@@ -273,7 +299,7 @@ WaylandContext::WaylandContext()
     wl_display_roundtrip(_h.display);
 }
 
-void Handles::reset()
+void Handles::reset() noexcept
 {
     if (top_level) {
         xdg_toplevel_destroy(top_level);
@@ -301,14 +327,4 @@ void Handles::reset()
     }
 }
 
-int main()
-try {
-    WaylandContext c;
-
-    while (!c.need_close()) {
-        c.update();
-    }
-} catch (std::exception &e) {
-    std::cout << e.what() << '\n';
-    return EXIT_FAILURE;
-}
+} // namespace
