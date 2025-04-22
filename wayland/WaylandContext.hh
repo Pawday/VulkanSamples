@@ -1,14 +1,38 @@
 #pragma once
 
+#include <memory>
+#include <vulkan/vulkan_raii.hpp>
+
+struct WaylandWindow;
+
 struct WaylandContext
 {
-    WaylandContext();
-    WaylandContext(const WaylandContext &) = delete;
+    using SharedInstance = std::shared_ptr<vk::raii::Instance>;
+    WaylandContext(SharedInstance I);
     WaylandContext(WaylandContext &&);
-    WaylandContext &operator=(const WaylandContext &) = delete;
     WaylandContext &operator=(WaylandContext &&);
     ~WaylandContext();
 
+    WaylandWindow create_window();
+
+    WaylandContext(const WaylandContext &) = delete;
+    WaylandContext &operator=(const WaylandContext &) = delete;
+
   private:
     alignas(8) char _[16];
+};
+
+struct WaylandWindow
+{
+    WaylandWindow(WaylandWindow &&);
+    WaylandWindow &operator=(WaylandWindow &&);
+    ~WaylandWindow();
+
+    WaylandWindow(const WaylandWindow &) = delete;
+    WaylandWindow &operator=(const WaylandWindow &) = delete;
+
+  private:
+    friend struct WaylandContext;
+    WaylandWindow();
+    alignas(16) char _[128];
 };
