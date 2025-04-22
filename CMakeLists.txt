@@ -61,9 +61,9 @@ target_link_libraries(${PREF}OffscreenDraw PRIVATE
 target_compile_definitions(${PREF}OffscreenDraw PRIVATE)
 
 
-add_executable(${PREF}WaylandWindow)
+add_library(${PREF}WaylandContext STATIC)
 add_subdirectory(wayland)
-target_cxx23(${PREF}WaylandWindow)
-target_strict_compilation(${PREF}WaylandWindow)
+target_cxx23(${PREF}WaylandContext)
+target_strict_compilation(${PREF}WaylandContext)
 
-target_link_libraries(${PREF}WaylandWindow PRIVATE ${PREF}syslib.wayland-client ${PREF}wayland_client.headers)
+target_link_libraries(${PREF}WaylandContext PRIVATE ${PREF}syslib.wayland-client ${PREF}wayland_client.headers)
