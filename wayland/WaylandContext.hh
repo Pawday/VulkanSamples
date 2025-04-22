@@ -10,5 +10,5 @@ struct WaylandContext
     ~WaylandContext();
 
   private:
-    alignas(32) char _[1024];
+    alignas(8) char _[16];
 };

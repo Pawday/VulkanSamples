@@ -331,24 +331,39 @@ void Handles::reset() noexcept
     }
 }
 
-template <size_t S>
-WaylandContextImpl &impl(char (&data)[S])
+struct WaylandContextImplShared
 {
-    return *reinterpret_cast<WaylandContextImpl *>(data);
+    WaylandContextImplShared() : _(std::make_shared<WaylandContextImpl>())
+    {
+    }
+
+    operator std::shared_ptr<WaylandContextImpl>()
+    {
+        return _;
+    }
+
+  private:
+    std::shared_ptr<WaylandContextImpl> _;
+};
+
+template <size_t S>
+WaylandContextImplShared &impl(char (&data)[S])
+{
+    return *reinterpret_cast<WaylandContextImplShared *>(data);
 }
 
 } // namespace
 
 WaylandContext::WaylandContext()
 {
-    static_assert(alignof(WaylandContext) >= alignof(WaylandContextImpl));
-    static_assert(sizeof(WaylandContext) >= sizeof(WaylandContextImpl));
-    new (_) WaylandContextImpl{};
+    static_assert(alignof(WaylandContext) >= alignof(WaylandContextImplShared));
+    static_assert(sizeof(WaylandContext) >= sizeof(WaylandContextImplShared));
+    new (_) WaylandContextImplShared{};
 }
 
 WaylandContext::WaylandContext(WaylandContext &&o)
 {
-    new (_) WaylandContextImpl{std::move(impl(o._))};
+    new (_) WaylandContextImplShared{std::move(impl(o._))};
 }
 
 WaylandContext &WaylandContext::operator=(WaylandContext &&o)
@@ -359,5 +374,5 @@ WaylandContext &WaylandContext::operator=(WaylandContext &&o)
 
 WaylandContext::~WaylandContext()
 {
-    impl(_).~WaylandContextImpl();
+    impl(_).~WaylandContextImplShared();
 }
