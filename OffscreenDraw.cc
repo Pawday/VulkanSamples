@@ -1,10 +1,8 @@
 #include <algorithm>
 #include <array>
-#include <cstdint>
 #include <format>
 #include <functional>
 #include <iostream>
-#include <iterator>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -14,6 +12,7 @@
 #include <vector>
 
 #include <cstddef>
+#include <cstdint>
 
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan.hpp>
@@ -23,60 +22,9 @@
 #include <vulkan/vulkan_structs.hpp>
 #include <vulkan/vulkan_to_string.hpp>
 
+#include "Messenger.hh"
+
 constexpr size_t device_idx = 0;
-
-struct Messenger
-{
-    Messenger(const char *name) : m_name(name)
-    {
-    }
-
-    void message(const char *msg)
-    {
-        const char *start = msg;
-        size_t len = 0;
-
-        while (true) {
-            len = 0;
-            while (start[len] != '\n' && start[len] != 0) {
-                len++;
-            }
-
-            if (start[len] == 0) {
-                std::span<const char> msg_line{start, len};
-                msg_prefixed(msg_line);
-                return;
-            }
-
-            if (len == 0) {
-                continue;
-            }
-
-            std::span<const char> msg_line{start, len};
-            msg_prefixed(msg_line);
-
-            if (start[len] == 0) {
-                return;
-            }
-
-            start += len + 1;
-        }
-    }
-
-  private:
-    void msg_prefixed(std::span<const char> msg)
-    {
-        if (m_name != nullptr) {
-            auto ostream_it = std::ostream_iterator<char>(std::cout);
-            std::format_to(ostream_it, "{} | ", m_name);
-        }
-
-        std::cout.write(msg.data(), msg.size());
-        std::cout.write("\n", 1);
-    }
-
-    const char *m_name = nullptr;
-};
 
 struct DeviceWrap
 {
