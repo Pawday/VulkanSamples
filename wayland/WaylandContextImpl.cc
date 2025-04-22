@@ -15,6 +15,8 @@
 #include <wayland-client-protocol.h>
 #include <xdg-shell.h>
 
+#include "WaylandContext.hh"
+
 namespace {
 
 struct RegistryListener
@@ -193,9 +195,9 @@ struct WaylandContextImpl
 
     WaylandContextImpl();
     WaylandContextImpl(const WaylandContextImpl &) = delete;
-    WaylandContextImpl(WaylandContextImpl &&) = delete;
+    WaylandContextImpl(WaylandContextImpl &&) = default;
     WaylandContextImpl &operator=(const WaylandContextImpl &) = delete;
-    WaylandContextImpl &operator=(WaylandContextImpl &&) = delete;
+    WaylandContextImpl &operator=(WaylandContextImpl &&) = default;
 
     void update()
     {
@@ -329,4 +331,33 @@ void Handles::reset() noexcept
     }
 }
 
+template <size_t S>
+WaylandContextImpl &impl(char (&data)[S])
+{
+    return *reinterpret_cast<WaylandContextImpl *>(data);
+}
+
 } // namespace
+
+WaylandContext::WaylandContext()
+{
+    static_assert(alignof(WaylandContext) >= alignof(WaylandContextImpl));
+    static_assert(sizeof(WaylandContext) >= sizeof(WaylandContextImpl));
+    new (_) WaylandContextImpl{};
+}
+
+WaylandContext::WaylandContext(WaylandContext &&o)
+{
+    new (_) WaylandContextImpl{std::move(impl(o._))};
+}
+
+WaylandContext &WaylandContext::operator=(WaylandContext &&o)
+{
+    impl(_).operator=(std::move(impl(o._)));
+    return *this;
+}
+
+WaylandContext::~WaylandContext()
+{
+    impl(_).~WaylandContextImpl();
+}

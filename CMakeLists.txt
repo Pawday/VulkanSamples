@@ -67,3 +67,9 @@ target_cxx23(${PREF}WaylandContext)
 target_strict_compilation(${PREF}WaylandContext)
 
 target_link_libraries(${PREF}WaylandContext PRIVATE ${PREF}syslib.wayland-client ${PREF}wayland_client.headers)
+
+add_executable(${PREF}WaylandWindow WaylandWindow.cc)
+target_cxx23(${PREF}WaylandWindow)
+target_strict_compilation(${PREF}WaylandWindow)
+
+target_link_libraries(${PREF}WaylandWindow PRIVATE ${PREF}WaylandContext)
