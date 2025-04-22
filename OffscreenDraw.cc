@@ -99,6 +99,11 @@ struct DeviceWrap
         return m_phy;
     };
 
+    vk::raii::Device &get()
+    {
+        return m_dev;
+    }
+
     vk::raii::Queue main_gq()
     {
         return m_graphic_queues.at(0);
@@ -145,7 +150,10 @@ MemTypeIndexMaping retreave_mem_type_idx_mapping(vk::raii::PhysicalDevice &D)
 
 struct DeviceLocalImage
 {
-    DeviceLocalImage(DeviceWrap &D, vk::Extent2D resolution)
+    DeviceLocalImage(
+        vk::raii::PhysicalDevice &phy,
+        vk::raii::Device &D,
+        vk::Extent2D resolution)
         : m_fmt(vk::Format::eR8G8B8A8Unorm),
 
           m_image([&D, &resolution, this]() {
@@ -159,14 +167,15 @@ struct DeviceLocalImage
               image_ci.mipLevels = 1;
               image_ci.arrayLayers = 1;
 
-              return D->createImage(image_ci);
+              return D.createImage(image_ci);
           }()),
-          m_mem_req(m_image.getMemoryRequirements()), m_image_mem([this, &D]() {
+          m_mem_req(m_image.getMemoryRequirements()),
+          m_image_mem([this, &D, &phy]() {
               vk::MemoryAllocateInfo mem_ci{};
 
-              auto mem_t_mapings = retreave_mem_type_idx_mapping(D.phy());
+              auto mem_t_mapings = retreave_mem_type_idx_mapping(phy);
 
-              auto mem_props = D.phy().getMemoryProperties();
+              auto mem_props = phy.getMemoryProperties();
               std::span<vk::MemoryType> mem_types{
                   mem_props.memoryTypes.data(), mem_props.memoryTypeCount};
 
@@ -189,13 +198,13 @@ struct DeviceLocalImage
               mem_ci.allocationSize = m_mem_req.size;
               mem_ci.memoryTypeIndex =
                   capable_device_local_mem_type_idx.value();
-              return D->allocateMemory(mem_ci);
+              return D.allocateMemory(mem_ci);
           }()),
           m_sizes(resolution), m_buffer([&D, this]() {
               vk::BufferCreateInfo b_ci{};
               b_ci.usage = vk::BufferUsageFlagBits::eTransferSrc;
               b_ci.size = m_mem_req.size;
-              return D->createBuffer(b_ci);
+              return D.createBuffer(b_ci);
           }())
     {
         m_image.bindMemory(m_image_mem, 0);
@@ -213,7 +222,7 @@ struct DeviceLocalImage
             imv_ci.image = m_image;
             imv_ci.viewType = vk::ImageViewType::e2D;
             imv_ci.subresourceRange = r;
-            return D->createImageView(imv_ci);
+            return D.createImageView(imv_ci);
         }();
     }
 
@@ -260,9 +269,10 @@ struct DeviceLocalImage
 
 struct HostVisMemBuffer
 {
-    HostVisMemBuffer(DeviceWrap &D, uint64_t size)
+    HostVisMemBuffer(
+        vk::raii::PhysicalDevice &phy, vk::raii::Device &D, uint64_t size)
         : m_mem([&]() {
-              auto mem_types = retreave_mem_type_idx_mapping(D.phy());
+              auto mem_types = retreave_mem_type_idx_mapping(phy);
 
               if (mem_types.host_visible_indexes.empty()) {
                   throw std::runtime_error(
@@ -275,13 +285,13 @@ struct HostVisMemBuffer
               allocate_info.memoryTypeIndex = host_vis_idx;
               allocate_info.allocationSize = size;
 
-              return D->allocateMemory(allocate_info);
+              return D.allocateMemory(allocate_info);
           }()),
           m_buffer([&]() {
               vk::BufferCreateInfo create_info;
               create_info.usage = vk::BufferUsageFlagBits::eTransferDst;
               create_info.size = size;
-              return D->createBuffer(create_info);
+              return D.createBuffer(create_info);
           }()),
           m_size(size)
     {
@@ -310,12 +320,10 @@ namespace {
 uint32_t vertex_shader_code[] = {
 #include "trsq_vertex.glsl.spv.hex"
 };
-std::span<uint32_t> vertex_shader_code_view{vertex_shader_code};
 
 uint32_t fragment_shader_code[] = {
 #include "trsq_fragment.glsl.spv.hex"
 };
-std::span<uint32_t> fragment_shader_code_view{fragment_shader_code};
 
 void format_table(
     const std::string &title,
@@ -347,12 +355,143 @@ void format_table(
 
 } // namespace
 
+vk::raii::RenderPass make_render_pass(vk::raii::Device &D, vk::Format format)
+{
+    std::array<vk::AttachmentDescription, 1> attache_infos{};
+    attache_infos[0].format = format;
+    attache_infos[0].samples = vk::SampleCountFlagBits::e1;
+    attache_infos[0].loadOp = vk::AttachmentLoadOp::eClear;
+    attache_infos[0].storeOp = vk::AttachmentStoreOp::eStore;
+    attache_infos[0].finalLayout = vk::ImageLayout::eGeneral;
+
+    std::array<vk::AttachmentReference, 1> attach_refs{};
+    attach_refs[0].layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+    std::array<vk::SubpassDescription, 1> subpasses{};
+    subpasses[0].pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+    subpasses[0].setColorAttachments(attach_refs);
+
+    vk::RenderPassCreateInfo render_pass_ci{};
+    render_pass_ci.setSubpasses(subpasses);
+    render_pass_ci.setAttachments(attache_infos);
+    return D.createRenderPass(render_pass_ci);
+};
+
+vk::raii::Pipeline make_pipeline(
+    vk::raii::Device &D,
+    vk::raii::RenderPass &render_pass,
+    vk::raii::PipelineLayout &pipeline_layout,
+    std::span<uint32_t> v_shader_code,
+    std::span<uint32_t> f_shader_code)
+{
+    vk::ShaderModuleCreateInfo v_shader_ci;
+    v_shader_ci.setCode(v_shader_code);
+    auto v_shader = D.createShaderModule(v_shader_ci);
+    vk::ShaderModuleCreateInfo f_shader_ci;
+    f_shader_ci.setCode(f_shader_code);
+    auto f_shader = D.createShaderModule(f_shader_ci);
+
+    std::array<vk::PipelineShaderStageCreateInfo, 2> stages;
+    stages[0].stage = vk::ShaderStageFlagBits::eVertex;
+    stages[0].module = v_shader;
+    stages[0].pName = "main";
+
+    stages[1].stage = vk::ShaderStageFlagBits::eFragment;
+    stages[1].module = f_shader;
+    stages[1].pName = "main";
+
+    vk::GraphicsPipelineCreateInfo pipeline_ci{};
+    pipeline_ci.layout = pipeline_layout;
+    pipeline_ci.renderPass = render_pass;
+    pipeline_ci.setStages(stages);
+
+    vk::PipelineVertexInputStateCreateInfo vertext_input_state{};
+    pipeline_ci.pVertexInputState = &vertext_input_state;
+
+    vk::PipelineInputAssemblyStateCreateInfo in_asm_state{};
+    in_asm_state.topology = vk::PrimitiveTopology::eTriangleList;
+    pipeline_ci.pInputAssemblyState = &in_asm_state;
+
+    vk::PipelineMultisampleStateCreateInfo m_state{};
+    pipeline_ci.pMultisampleState = &m_state;
+
+    vk::PipelineRasterizationStateCreateInfo raster_state{};
+    raster_state.polygonMode = vk::PolygonMode::eFill;
+    raster_state.lineWidth = 1.0;
+    pipeline_ci.pRasterizationState = &raster_state;
+
+    std::array<vk::PipelineColorBlendAttachmentState, 1> blend_attachments{};
+    blend_attachments[0].blendEnable = false;
+    {
+        using C = vk::ColorComponentFlagBits;
+        blend_attachments[0].colorWriteMask |= C::eR;
+        blend_attachments[0].colorWriteMask |= C::eG;
+        blend_attachments[0].colorWriteMask |= C::eB;
+        blend_attachments[0].colorWriteMask |= C::eA;
+    }
+    vk::PipelineColorBlendStateCreateInfo blend_state{};
+    blend_state.setAttachments(blend_attachments);
+    pipeline_ci.pColorBlendState = &blend_state;
+
+    std::array<vk::DynamicState, 2> dyn_state_types{
+        vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+    vk::PipelineDynamicStateCreateInfo dyn_state{};
+    dyn_state.setDynamicStates(dyn_state_types);
+    pipeline_ci.pDynamicState = &dyn_state;
+
+    vk::PipelineViewportStateCreateInfo viewport_state{};
+    viewport_state.viewportCount = 1;
+    viewport_state.scissorCount = 1;
+    pipeline_ci.pViewportState = &viewport_state;
+
+    return D.createGraphicsPipeline(nullptr, pipeline_ci);
+};
+
 int main()
 {
     vk::raii::Context ctx;
 
     Msgr VKI_msgr{"VKI"};
-    auto VKI = [&ctx, &VKI_msgr]() {
+
+    vk::DebugUtilsMessengerCreateInfoEXT msgr_ci = [&VKI_msgr]() {
+        vk::DebugUtilsMessengerCreateInfoEXT output{};
+
+        vk::PFN_DebugUtilsMessengerCallbackEXT callback_t = []
+
+            (vk::DebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/,
+             vk::DebugUtilsMessageTypeFlagsEXT /*messageTypes*/,
+             const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData,
+             void *pUserData) -> vk::Bool32 {
+            Msgr &m = *reinterpret_cast<Msgr *>(pUserData);
+
+            m.message(pCallbackData->pMessage);
+
+            return false;
+        };
+
+        vk::DebugUtilsMessageSeverityFlagsEXT sever;
+        using SevT = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+        sever |= SevT::eError;
+        sever |= SevT::eWarning;
+        sever |= SevT::eInfo;
+        sever |= SevT::eVerbose;
+        output.setMessageSeverity(sever);
+
+        vk::DebugUtilsMessageTypeFlagsEXT types;
+        using TypeF = vk::DebugUtilsMessageTypeFlagBitsEXT;
+        types |= TypeF::eValidation;
+        types |= TypeF::eDeviceAddressBinding;
+        types |= TypeF::eGeneral;
+        types |= TypeF::ePerformance;
+        output.setMessageType(types);
+
+        output.setPUserData(&VKI_msgr);
+        output.setPfnUserCallback(callback_t);
+
+        return output;
+    }();
+
+    vk::raii::Instance VKI = [&ctx, &VKI_msgr, &msgr_ci]() {
         vk::InstanceCreateInfo in_ci{};
 
         do {
@@ -369,43 +508,6 @@ int main()
 
         } while (false);
 
-        vk::DebugUtilsMessengerCreateInfoEXT msgr_ci = [&VKI_msgr]() {
-            vk::DebugUtilsMessengerCreateInfoEXT output{};
-
-            vk::PFN_DebugUtilsMessengerCallbackEXT callback_t = []
-
-                (vk::DebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/,
-                 vk::DebugUtilsMessageTypeFlagsEXT /*messageTypes*/,
-                 const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                 void *pUserData) -> vk::Bool32 {
-                Msgr &m = *reinterpret_cast<Msgr *>(pUserData);
-
-                m.message(pCallbackData->pMessage);
-
-                return false;
-            };
-
-            vk::DebugUtilsMessageSeverityFlagsEXT sever;
-            using SevT = vk::DebugUtilsMessageSeverityFlagBitsEXT;
-            sever |= SevT::eError;
-            sever |= SevT::eWarning;
-            sever |= SevT::eInfo;
-            sever |= SevT::eVerbose;
-            output.setMessageSeverity(sever);
-
-            vk::DebugUtilsMessageTypeFlagsEXT types;
-            using TypeF = vk::DebugUtilsMessageTypeFlagBitsEXT;
-            types |= TypeF::eValidation;
-            types |= TypeF::eDeviceAddressBinding;
-            types |= TypeF::eGeneral;
-            types |= TypeF::ePerformance;
-            output.setMessageType(types);
-
-            output.setPUserData(&VKI_msgr);
-            output.setPfnUserCallback(callback_t);
-
-            return output;
-        }();
         in_ci.setPNext(&msgr_ci);
 
         std::vector<const char *> VKI_exts;
@@ -503,29 +605,11 @@ int main()
             std::move(device), std::move(g_queues), std::move(phys_dev)};
     }();
 
-    DeviceLocalImage image{D, {10 * 10, 4 * 10}};
-    HostVisMemBuffer image_dst_buffer{D, image.width() * image.height() * 4};
+    DeviceLocalImage image{D.phy(), D.get(), {10 * 10, 4 * 10}};
+    HostVisMemBuffer image_dst_buffer{
+        D.phy(), D.get(), image.width() * image.height() * 4};
 
-    auto render_pass = [&image, &D]() {
-        std::array<vk::AttachmentDescription, 1> attache_infos{};
-        attache_infos[0].format = image.format();
-        attache_infos[0].samples = vk::SampleCountFlagBits::e1;
-        attache_infos[0].loadOp = vk::AttachmentLoadOp::eClear;
-        attache_infos[0].storeOp = vk::AttachmentStoreOp::eStore;
-        attache_infos[0].finalLayout = vk::ImageLayout::eGeneral;
-
-        std::array<vk::AttachmentReference, 1> attach_refs{};
-        attach_refs[0].layout = vk::ImageLayout::eColorAttachmentOptimal;
-
-        std::array<vk::SubpassDescription, 1> subpasses{};
-        subpasses[0].pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-        subpasses[0].setColorAttachments(attach_refs);
-
-        vk::RenderPassCreateInfo render_pass_ci{};
-        render_pass_ci.setSubpasses(subpasses);
-        render_pass_ci.setAttachments(attache_infos);
-        return D->createRenderPass(render_pass_ci);
-    }();
+    auto render_pass = make_render_pass(D.get(), image.format());
 
     vk::raii::PipelineLayout pipeline_layout = [&D]() {
         vk::PipelineLayoutCreateInfo p_layout_ci{};
@@ -533,70 +617,12 @@ int main()
         return D->createPipelineLayout(p_layout_ci);
     }();
 
-    vk::raii::Pipeline pipeline = [&D, &render_pass, &pipeline_layout]() {
-        vk::ShaderModuleCreateInfo v_shader_ci;
-        v_shader_ci.setCode(vertex_shader_code_view);
-        auto v_shader = D->createShaderModule(v_shader_ci);
-        vk::ShaderModuleCreateInfo f_shader_ci;
-        f_shader_ci.setCode(fragment_shader_code_view);
-        auto f_shader = D->createShaderModule(f_shader_ci);
-
-        std::array<vk::PipelineShaderStageCreateInfo, 2> stages;
-        stages[0].stage = vk::ShaderStageFlagBits::eVertex;
-        stages[0].module = v_shader;
-        stages[0].pName = "main";
-
-        stages[1].stage = vk::ShaderStageFlagBits::eFragment;
-        stages[1].module = f_shader;
-        stages[1].pName = "main";
-
-        vk::GraphicsPipelineCreateInfo pipeline_ci{};
-        pipeline_ci.layout = pipeline_layout;
-        pipeline_ci.renderPass = render_pass;
-        pipeline_ci.setStages(stages);
-
-        vk::PipelineVertexInputStateCreateInfo vertext_input_state{};
-        pipeline_ci.pVertexInputState = &vertext_input_state;
-
-        vk::PipelineInputAssemblyStateCreateInfo in_asm_state{};
-        in_asm_state.topology = vk::PrimitiveTopology::eTriangleList;
-        pipeline_ci.pInputAssemblyState = &in_asm_state;
-
-        vk::PipelineMultisampleStateCreateInfo m_state{};
-        pipeline_ci.pMultisampleState = &m_state;
-
-        vk::PipelineRasterizationStateCreateInfo raster_state{};
-        raster_state.polygonMode = vk::PolygonMode::eFill;
-        raster_state.lineWidth = 1.0;
-        pipeline_ci.pRasterizationState = &raster_state;
-
-        std::array<vk::PipelineColorBlendAttachmentState, 1>
-            blend_attachments{};
-        blend_attachments[0].blendEnable = false;
-        {
-            using C = vk::ColorComponentFlagBits;
-            blend_attachments[0].colorWriteMask |= C::eR;
-            blend_attachments[0].colorWriteMask |= C::eG;
-            blend_attachments[0].colorWriteMask |= C::eB;
-            blend_attachments[0].colorWriteMask |= C::eA;
-        }
-        vk::PipelineColorBlendStateCreateInfo blend_state{};
-        blend_state.setAttachments(blend_attachments);
-        pipeline_ci.pColorBlendState = &blend_state;
-
-        std::array<vk::DynamicState, 2> dyn_state_types{
-            vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-        vk::PipelineDynamicStateCreateInfo dyn_state{};
-        dyn_state.setDynamicStates(dyn_state_types);
-        pipeline_ci.pDynamicState = &dyn_state;
-
-        vk::PipelineViewportStateCreateInfo viewport_state{};
-        viewport_state.viewportCount = 1;
-        viewport_state.scissorCount = 1;
-        pipeline_ci.pViewportState = &viewport_state;
-
-        return D->createGraphicsPipeline(nullptr, pipeline_ci);
-    }();
+    vk::raii::Pipeline pipeline = make_pipeline(
+        D.get(),
+        render_pass,
+        pipeline_layout,
+        vertex_shader_code,
+        fragment_shader_code);
 
     vk::raii::Framebuffer fbm = [&D, &render_pass, &image]() {
         vk::FramebufferCreateInfo fbm_ci{};
