@@ -66,7 +66,11 @@ add_subdirectory(wayland)
 target_cxx23(${PREF}WaylandContext)
 target_strict_compilation(${PREF}WaylandContext)
 
-target_link_libraries(${PREF}WaylandContext PRIVATE ${PREF}syslib.wayland-client ${PREF}wayland_client.headers)
+target_link_libraries(${PREF}WaylandContext PRIVATE ${PREF}syslib.wayland-client)
+target_link_libraries(${PREF}WaylandContext PUBLIC
+    ${PREF}wayland_client.headers
+    ${PREF}vk_headers
+)
 
 add_executable(${PREF}WaylandWindow WaylandWindow.cc)
 target_cxx23(${PREF}WaylandWindow)
