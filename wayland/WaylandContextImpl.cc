@@ -172,7 +172,7 @@ struct Handles
     xdg_toplevel *top_level = nullptr;
 };
 
-struct WaylandContext
+struct WaylandContextImpl
 {
     void xdg_ping(struct xdg_wm_base *xdg_wm_base, uint32_t serial)
     {
@@ -191,11 +191,11 @@ struct WaylandContext
 
     static xdg_surface_listener xdg_surface_c_vtable;
 
-    WaylandContext();
-    WaylandContext(const WaylandContext &) = delete;
-    WaylandContext(WaylandContext &&) = delete;
-    WaylandContext &operator=(const WaylandContext &) = delete;
-    WaylandContext &operator=(WaylandContext &&) = delete;
+    WaylandContextImpl();
+    WaylandContextImpl(const WaylandContextImpl &) = delete;
+    WaylandContextImpl(WaylandContextImpl &&) = delete;
+    WaylandContextImpl &operator=(const WaylandContextImpl &) = delete;
+    WaylandContextImpl &operator=(WaylandContextImpl &&) = delete;
 
     void update()
     {
@@ -224,31 +224,33 @@ struct WaylandContext
     bool _need_close = false;
 };
 
-xdg_wm_base_listener WaylandContext::xdg_base_c_vtable = []() {
+xdg_wm_base_listener WaylandContextImpl::xdg_base_c_vtable = []() {
     xdg_wm_base_listener output{};
 
-    output.ping =
-        [](void *data, struct xdg_wm_base *xdg_wm_base, uint32_t serial) {
-            WaylandContext &ctx = *reinterpret_cast<WaylandContext *>(data);
-            ctx.xdg_ping(xdg_wm_base, serial);
-        };
+    output.ping = [](void *data,
+                     struct xdg_wm_base *xdg_wm_base,
+                     uint32_t serial) {
+        WaylandContextImpl &ctx = *reinterpret_cast<WaylandContextImpl *>(data);
+        ctx.xdg_ping(xdg_wm_base, serial);
+    };
 
     return output;
 }();
 
-xdg_surface_listener WaylandContext::xdg_surface_c_vtable = []() {
+xdg_surface_listener WaylandContextImpl::xdg_surface_c_vtable = []() {
     xdg_surface_listener output{};
 
-    output.configure =
-        [](void *data, struct xdg_surface *xdg_surface, uint32_t serial) {
-            WaylandContext &ctx = *reinterpret_cast<WaylandContext *>(data);
-            ctx.configure(xdg_surface, serial);
-        };
+    output.configure = [](void *data,
+                          struct xdg_surface *xdg_surface,
+                          uint32_t serial) {
+        WaylandContextImpl &ctx = *reinterpret_cast<WaylandContextImpl *>(data);
+        ctx.configure(xdg_surface, serial);
+    };
 
     return output;
 }();
 
-WaylandContext::WaylandContext()
+WaylandContextImpl::WaylandContextImpl()
 {
     _h.display = wl_display_connect(nullptr);
     if (_h.display == nullptr) {
@@ -278,7 +280,7 @@ WaylandContext::WaylandContext()
     }
 
     xdg_wm_base_add_listener(
-        _registry.xdg_base(), &WaylandContext::xdg_base_c_vtable, this);
+        _registry.xdg_base(), &WaylandContextImpl::xdg_base_c_vtable, this);
 
     _h.xdg_surface =
         xdg_wm_base_get_xdg_surface(_registry.xdg_base(), _h.surface);
@@ -287,7 +289,7 @@ WaylandContext::WaylandContext()
     }
 
     xdg_surface_add_listener(
-        _h.xdg_surface, &WaylandContext::xdg_surface_c_vtable, this);
+        _h.xdg_surface, &WaylandContextImpl::xdg_surface_c_vtable, this);
 
     _h.top_level = xdg_surface_get_toplevel(_h.xdg_surface);
     if (_h.top_level == nullptr) {
