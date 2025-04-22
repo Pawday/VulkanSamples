@@ -25,9 +25,9 @@
 
 constexpr size_t device_idx = 0;
 
-struct Msgr
+struct Messenger
 {
-    Msgr(const char *name) : m_name(name)
+    Messenger(const char *name) : m_name(name)
     {
     }
 
@@ -451,7 +451,7 @@ int main()
 {
     vk::raii::Context ctx;
 
-    Msgr VKI_msgr{"VKI"};
+    Messenger VKI_msgr{"VKI"};
 
     vk::DebugUtilsMessengerCreateInfoEXT msgr_ci = [&VKI_msgr]() {
         vk::DebugUtilsMessengerCreateInfoEXT output{};
@@ -462,7 +462,7 @@ int main()
              vk::DebugUtilsMessageTypeFlagsEXT /*messageTypes*/,
              const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData,
              void *pUserData) -> vk::Bool32 {
-            Msgr &m = *reinterpret_cast<Msgr *>(pUserData);
+            Messenger &m = *reinterpret_cast<Messenger *>(pUserData);
 
             m.message(pCallbackData->pMessage);
 
