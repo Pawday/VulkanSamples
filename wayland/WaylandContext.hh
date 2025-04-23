@@ -15,6 +15,8 @@ struct WaylandContext
 
     WaylandWindow create_window();
 
+    void update();
+
     WaylandContext(const WaylandContext &) = delete;
     WaylandContext &operator=(const WaylandContext &) = delete;
 

@@ -223,6 +223,8 @@ struct WaylandWindowImpl
             throw std::runtime_error("xdg_surface_get_toplevel() error");
         }
 
+        wl_surface_commit(_h.surface);
+
         xdg_toplevel_set_title(_h.top_level, "Vulkan wayland sample");
     }
 
@@ -252,9 +254,8 @@ struct WaylandWindowImpl
 
     void configure([[maybe_unused]] xdg_surface *xdg_surface, uint32_t serial)
     {
-        std::cout << "Configure serial" << std::to_string(serial) << '\n';
+        std::cout << "Configure serial " << std::to_string(serial) << '\n';
         xdg_surface_ack_configure(xdg_surface, serial);
-        wl_surface_commit(_h.surface);
     }
 
     static xdg_surface_listener xdg_surface_c_vtable;
@@ -319,6 +320,11 @@ struct WaylandContextImpl
     WaylandContextImpl(WaylandContextImpl &&) = default;
     WaylandContextImpl &operator=(const WaylandContextImpl &) = delete;
     WaylandContextImpl &operator=(WaylandContextImpl &&) = default;
+
+    void update()
+    {
+        wl_display_dispatch(_h.display);
+    }
 
   private:
     ContextHandles _h;
@@ -536,3 +542,7 @@ vk::raii::SurfaceKHR &WaylandWindow::surface()
     return win_impl(_).surface();
 }
 
+void WaylandContext::update()
+{
+    ctx_impl(_)->update();
+};
