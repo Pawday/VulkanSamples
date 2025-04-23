@@ -3,6 +3,7 @@
 #include <span>
 
 #include <cstddef>
+#include <string_view>
 
 struct Messenger
 {
@@ -10,10 +11,8 @@ struct Messenger
     {
     }
 
-    void message(const char *msg);
+    void message(std::string_view msg);
 
   private:
-    void msg_prefixed(std::span<const char> msg);
-
     const char *m_name = nullptr;
 };

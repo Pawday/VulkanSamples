@@ -6,6 +6,7 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -422,7 +423,7 @@ int main()
             }
 
             format_table(
-                "Extentions", exten_strings, [&VKI_msgr](const char *msg) {
+                "Extentions", exten_strings, [&VKI_msgr](std::string_view msg) {
                     VKI_msgr.message(msg);
                 });
 
@@ -515,9 +516,9 @@ int main()
             std::string dev_name{phys_dev.getProperties().deviceName.data()};
 
             format_table(
-                dev_name + " extentions", exten_strings, [](const char *msg) {
-                    std::cout << msg << '\n';
-                });
+                dev_name + " extentions",
+                exten_strings,
+                [](std::string_view msg) { std::cout << msg << '\n'; });
 
         } while (false);
 

@@ -2,36 +2,47 @@
 #include <iostream>
 #include <iterator>
 #include <span>
+#include <string_view>
 
 #include <cstddef>
 
 #include "Messenger.hh"
 
-void Messenger::msg_prefixed(std::span<const char> msg)
+namespace {
+void msg_prefixed(const char *prefix, std::string_view msg)
 {
-    if (m_name != nullptr) {
+    if (prefix != nullptr) {
         auto ostream_it = std::ostream_iterator<char>(std::cout);
-        std::format_to(ostream_it, "{} | ", m_name);
+        std::format_to(ostream_it, "{} | ", prefix);
     }
 
     std::cout.write(msg.data(), msg.size());
     std::cout.write("\n", 1);
 }
+} // namespace
 
-void Messenger::message(const char *msg)
+void Messenger::message(std::string_view msg)
 {
-    const char *start = msg;
+    size_t offset = 0;
     size_t len = 0;
 
     while (true) {
         len = 0;
-        while (start[len] != '\n' && start[len] != 0) {
+
+        auto can_expand = [&]() {
+            bool o = true;
+            o = o && offset + len != msg.size();
+            o = o && msg[offset + len] != '\n';
+            o = o && msg[offset + len] != 0;
+            return o;
+        };
+
+        while (can_expand()) {
             len++;
         }
 
-        if (start[len] == 0) {
-            std::span<const char> msg_line{start, len};
-            msg_prefixed(msg_line);
+        if (msg[offset + len] == 0) {
+            msg_prefixed(m_name, msg.substr(offset, len));
             return;
         }
 
@@ -39,14 +50,13 @@ void Messenger::message(const char *msg)
             continue;
         }
 
-        std::span<const char> msg_line{start, len};
-        msg_prefixed(msg_line);
+        msg_prefixed(m_name, msg.substr(offset, len));
 
-        if (start[len] == 0) {
+        if (msg[offset + len] == 0) {
             return;
         }
 
-        start += len + 1;
+        offset += len + 1;
     }
 }
 

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <cstdlib>
@@ -72,7 +73,7 @@ try {
             }
 
             format_table(
-                "Extentions", exten_strings, [&VKI_msgr](const char *msg) {
+                "Extentions", exten_strings, [&VKI_msgr](std::string_view msg) {
                     VKI_msgr.message(msg);
                 });
 
