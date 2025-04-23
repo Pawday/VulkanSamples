@@ -51,7 +51,13 @@ add_system_library(wayland-client)
 add_subdirectory(deps)
 add_subdirectory(shaders)
 
-add_executable(${PREF}OffscreenDraw OffscreenDraw.cc Messenger.cc)
+add_executable(${PREF}OffscreenDraw
+    OffscreenDraw.cc
+
+    Messenger.cc
+    SimpleVulkanObjects.cc
+)
+
 target_cxx23(${PREF}OffscreenDraw)
 target_strict_compilation(${PREF}OffscreenDraw)
 target_link_libraries(${PREF}OffscreenDraw PRIVATE
@@ -72,7 +78,13 @@ target_link_libraries(${PREF}WaylandContext PUBLIC
     ${PREF}vk_headers
 )
 
-add_executable(${PREF}WaylandWindow WaylandWindow.cc Messenger.cc)
+add_executable(${PREF}WaylandWindow
+    WaylandWindow.cc
+
+    Messenger.cc
+    SimpleVulkanObjects.cc
+)
+
 target_cxx23(${PREF}WaylandWindow)
 target_strict_compilation(${PREF}WaylandWindow)
 
