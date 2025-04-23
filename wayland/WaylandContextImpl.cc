@@ -500,8 +500,6 @@ WaylandWindow WaylandContext::create_window()
         throw std::runtime_error("Cannot load vkCreateWaylandSurfaceKHR()");
     }
 
-    WaylandWindow output{};
-
     WaylandWindowImpl win{
         ctx, ctx->_registry.compositor(), ctx->_registry.xdg_base()};
 
@@ -525,8 +523,11 @@ WaylandWindow WaylandContext::create_window()
     vk::raii::SurfaceKHR cxx_surface{raii_instance, c_surface};
     win.set_surface(std::move(cxx_surface));
 
-    new (output._) WaylandWindowImpl(std::move(win));
+    WaylandWindow output{};
 
+    static_assert(sizeof(WaylandWindow) >= sizeof(WaylandWindowImpl));
+    static_assert(alignof(WaylandWindow) >= alignof(WaylandWindowImpl));
+    new (output._) WaylandWindowImpl(std::move(win));
     return output;
 }
 
