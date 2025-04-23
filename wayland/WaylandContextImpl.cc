@@ -529,3 +529,9 @@ WaylandWindow WaylandContext::create_window()
 
     return output;
 }
+
+vk::raii::SurfaceKHR &WaylandWindow::surface()
+{
+    return win_impl(_).surface();
+}
+

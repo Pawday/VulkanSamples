@@ -31,6 +31,8 @@ struct WaylandWindow
     WaylandWindow(const WaylandWindow &) = delete;
     WaylandWindow &operator=(const WaylandWindow &) = delete;
 
+    vk::raii::SurfaceKHR &surface();
+
   private:
     friend struct WaylandContext;
     WaylandWindow();
