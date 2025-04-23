@@ -88,4 +88,7 @@ add_executable(${PREF}WaylandWindow
 target_cxx23(${PREF}WaylandWindow)
 target_strict_compilation(${PREF}WaylandWindow)
 
-target_link_libraries(${PREF}WaylandWindow PRIVATE ${PREF}WaylandContext)
+target_link_libraries(${PREF}WaylandWindow PRIVATE
+    ${PREF}WaylandContext
+    ${PREF}shaders
+)
