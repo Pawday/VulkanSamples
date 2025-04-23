@@ -72,11 +72,11 @@ struct MemTypeIndexMaping
 };
 
 namespace {
-MemTypeIndexMaping retreave_mem_type_idx_mapping(vk::raii::PhysicalDevice &D)
+MemTypeIndexMaping
+    retreave_mem_type_idx_mapping(vk::PhysicalDeviceMemoryProperties &mem_props)
 {
     MemTypeIndexMaping output;
 
-    auto mem_props = D.getMemoryProperties();
     std::span<vk::MemoryType> mem_types{
         mem_props.memoryTypes.data(), mem_props.memoryTypeCount};
 
@@ -123,9 +123,10 @@ struct DeviceLocalImage
           m_image_mem([this, &D, &phy]() {
               vk::MemoryAllocateInfo mem_ci{};
 
-              auto mem_t_mapings = retreave_mem_type_idx_mapping(phy);
-
               auto mem_props = phy.getMemoryProperties();
+
+              auto mem_t_mapings = retreave_mem_type_idx_mapping(mem_props);
+
               std::span<vk::MemoryType> mem_types{
                   mem_props.memoryTypes.data(), mem_props.memoryTypeCount};
 
@@ -222,7 +223,8 @@ struct HostVisMemBuffer
     HostVisMemBuffer(
         vk::raii::PhysicalDevice &phy, vk::raii::Device &D, uint64_t size)
         : m_mem([&]() {
-              auto mem_types = retreave_mem_type_idx_mapping(phy);
+              auto mem_props = phy.getMemoryProperties();
+              auto mem_types = retreave_mem_type_idx_mapping(mem_props);
 
               if (mem_types.host_visible_indexes.empty()) {
                   throw std::runtime_error(
