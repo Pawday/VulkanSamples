@@ -102,7 +102,7 @@ try {
         VKI_exts.push_back("VK_KHR_wayland_surface");
 
         std::vector<const char *> layers;
-        // layers.push_back("VK_LAYER_KHRONOS_validation");
+        layers.push_back("VK_LAYER_KHRONOS_validation");
 
         in_ci.setPEnabledExtensionNames(VKI_exts);
         in_ci.setPEnabledLayerNames(layers);
