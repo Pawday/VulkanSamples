@@ -114,6 +114,10 @@ try {
         return std::make_shared<vk::raii::Instance>(ctx.createInstance(in_ci));
     }();
 
+    vk::raii::DebugUtilsMessengerEXT msgr = [&]() {
+        return VKI->createDebugUtilsMessengerEXT(msgr_ci);
+    }();
+
     WaylandContext wl_ctx{VKI};
 
     auto D_phy = [&VKI]() {

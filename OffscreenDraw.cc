@@ -354,6 +354,10 @@ int main()
         return ctx.createInstance(in_ci);
     }();
 
+    vk::raii::DebugUtilsMessengerEXT msgr = [&]() {
+        return VKI.createDebugUtilsMessengerEXT(msgr_ci);
+    }();
+
     DeviceWrap D = [&VKI]() {
         std::optional<vk::raii::PhysicalDevice> output_phys;
         std::vector<vk::raii::PhysicalDevice> devs =
