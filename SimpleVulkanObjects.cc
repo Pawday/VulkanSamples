@@ -105,3 +105,31 @@ vk::raii::Pipeline SimpleVulkanObjects::make_pipeline(
 
     return D.createGraphicsPipeline(nullptr, pipeline_ci);
 };
+vk::DebugUtilsMessengerCreateInfoEXT
+    SimpleVulkanObjects::make_verbose_messenger_ci(
+        void *user_data, vk::PFN_DebugUtilsMessengerCallbackEXT callback)
+{
+    vk::DebugUtilsMessengerCreateInfoEXT output{};
+
+    vk::DebugUtilsMessageSeverityFlagsEXT sever;
+    using SevT = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+    sever |= SevT::eError;
+    sever |= SevT::eWarning;
+    sever |= SevT::eInfo;
+    sever |= SevT::eVerbose;
+    output.setMessageSeverity(sever);
+
+    vk::DebugUtilsMessageTypeFlagsEXT types;
+    using TypeF = vk::DebugUtilsMessageTypeFlagBitsEXT;
+    types |= TypeF::eValidation;
+    types |= TypeF::eDeviceAddressBinding;
+    types |= TypeF::eGeneral;
+    types |= TypeF::ePerformance;
+    output.setMessageType(types);
+
+    output.setPUserData(user_data);
+    output.setPfnUserCallback(callback);
+
+    return output;
+}
+

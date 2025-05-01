@@ -23,4 +23,7 @@ struct SimpleVulkanObjects
         vk::raii::PipelineLayout &pipeline_layout,
         std::span<uint32_t> v_shader_code,
         std::span<uint32_t> f_shader_code);
+
+    static vk::DebugUtilsMessengerCreateInfoEXT make_verbose_messenger_ci(
+        void *user_data, vk::PFN_DebugUtilsMessengerCallbackEXT callback);
 };

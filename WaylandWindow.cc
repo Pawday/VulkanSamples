@@ -41,44 +41,18 @@ try {
     vk::raii::Context ctx;
 
     Messenger VKI_msgr{"VKI"};
-
-    vk::DebugUtilsMessengerCreateInfoEXT msgr_ci = [&VKI_msgr]() {
-        vk::DebugUtilsMessengerCreateInfoEXT output{};
-
-        vk::PFN_DebugUtilsMessengerCallbackEXT callback_t = []
-
-            (vk::DebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/,
-             vk::DebugUtilsMessageTypeFlagsEXT /*messageTypes*/,
-             const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData,
-             void *pUserData) -> vk::Bool32 {
+    auto msgr_ci = SimpleVulkanObjects::make_verbose_messenger_ci(
+        &VKI_msgr,
+        [](vk::DebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/,
+           vk::DebugUtilsMessageTypeFlagsEXT /*messageTypes*/,
+           const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData,
+           void *pUserData) -> vk::Bool32 {
             Messenger &m = *reinterpret_cast<Messenger *>(pUserData);
 
             m.message(pCallbackData->pMessage);
 
             return false;
-        };
-
-        vk::DebugUtilsMessageSeverityFlagsEXT sever;
-        using SevT = vk::DebugUtilsMessageSeverityFlagBitsEXT;
-        sever |= SevT::eError;
-        sever |= SevT::eWarning;
-        sever |= SevT::eInfo;
-        sever |= SevT::eVerbose;
-        output.setMessageSeverity(sever);
-
-        vk::DebugUtilsMessageTypeFlagsEXT types;
-        using TypeF = vk::DebugUtilsMessageTypeFlagBitsEXT;
-        types |= TypeF::eValidation;
-        types |= TypeF::eDeviceAddressBinding;
-        types |= TypeF::eGeneral;
-        types |= TypeF::ePerformance;
-        output.setMessageType(types);
-
-        output.setPUserData(&VKI_msgr);
-        output.setPfnUserCallback(callback_t);
-
-        return output;
-    }();
+        });
 
     std::shared_ptr<vk::raii::Instance> VKI = [&ctx, &VKI_msgr, &msgr_ci]() {
         vk::InstanceCreateInfo in_ci{};
