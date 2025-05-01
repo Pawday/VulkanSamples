@@ -51,6 +51,8 @@ add_system_library(wayland-client)
 add_subdirectory(deps)
 add_subdirectory(shaders)
 
+add_executable(${PREF}ICDLoadLeakTest ICDLoadLeakTest.c)
+
 add_library(${PREF}Common STATIC
     Messenger.cc
     SimpleVulkanObjects.cc
