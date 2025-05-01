@@ -33,6 +33,8 @@
 #include "SimpleVulkanObjects.hh"
 
 constexpr size_t device_idx = 0;
+constexpr auto prefered_transparency_mod =
+    vk::CompositeAlphaFlagBitsKHR::ePreMultiplied;
 
 int main()
 try {
@@ -270,8 +272,8 @@ try {
             return filtered == flag;
         };
 
-        if (check_flag(vk::CompositeAlphaFlagBitsKHR::ePreMultiplied)) {
-            alpha_flags = vk::CompositeAlphaFlagBitsKHR::ePreMultiplied;
+        if (check_flag(prefered_transparency_mod)) {
+            alpha_flags = prefered_transparency_mod;
         }
 
         vk::SwapchainCreateInfoKHR swapchain_ci{};
