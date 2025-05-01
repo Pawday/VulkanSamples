@@ -85,3 +85,11 @@ target_link_libraries(${PREF}WaylandWindow PRIVATE
     ${PREF}Common
     ${PREF}WaylandContext
 )
+
+add_executable(${PREF}DMABuf DMABuf.cc)
+target_cxx23(${PREF}DMABuf)
+target_strict_compilation(${PREF}DMABuf)
+target_link_libraries(${PREF}DMABuf PRIVATE
+    ${PREF}Common
+    ${PREF}WaylandContext
+)
