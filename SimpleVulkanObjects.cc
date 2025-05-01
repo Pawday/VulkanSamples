@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <span>
+
 #include <vulkan/vk_platform.h>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
@@ -11,7 +12,6 @@
 #include <vulkan/vulkan_to_string.hpp>
 
 #include "SimpleVulkanObjects.hh"
-
 
 vk::raii::RenderPass SimpleVulkanObjects::make_render_pass(
     vk::raii::Device &D, vk::Format format)

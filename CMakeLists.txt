@@ -64,6 +64,16 @@ target_link_libraries(${PREF}Common PUBLIC
     ${PREF}vk_headers
     ${PREF}shaders
 )
+target_precompile_headers(${PREF}Common
+  PUBLIC
+    "<vulkan/vk_platform.h>"
+    "<vulkan/vulkan.hpp>"
+    "<vulkan/vulkan_enums.hpp>"
+    "<vulkan/vulkan_handles.hpp>"
+    "<vulkan/vulkan_raii.hpp>"
+    "<vulkan/vulkan_structs.hpp>"
+    "<vulkan/vulkan_to_string.hpp>"
+)
 
 add_executable(${PREF}OffscreenDraw OffscreenDraw.cc)
 target_cxx23(${PREF}OffscreenDraw)

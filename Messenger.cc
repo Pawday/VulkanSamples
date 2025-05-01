@@ -1,7 +1,6 @@
 #include <format>
 #include <iostream>
 #include <iterator>
-#include <span>
 #include <string_view>
 
 #include <cstddef>

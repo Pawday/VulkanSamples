@@ -13,16 +13,16 @@
 
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_raii.hpp>
+#include <vulkan/vulkan_to_string.hpp>
 
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include <xdg-shell.h>
 
 #include "WaylandContext.hh"
-#include "vulkan/vulkan_enums.hpp"
-#include "vulkan/vulkan_to_string.hpp"
 
 namespace {
 
