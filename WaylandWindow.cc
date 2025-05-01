@@ -428,9 +428,6 @@ try {
         dep_info.setImageMemoryBarriers(image_bars);
         cmd_buffer.pipelineBarrier2(dep_info);
         cmd_buffer.beginRenderPass(rp_i, vk::SubpassContents::eInline);
-        vk::ClearColorValue color{};
-        cmd_buffer.clearColorImage(
-            images[idx], image_bar.newLayout, color, {images_subresource});
         cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
         cmd_buffer.draw(3 * 1, 1, 0, 0);
         cmd_buffer.endRenderPass();
