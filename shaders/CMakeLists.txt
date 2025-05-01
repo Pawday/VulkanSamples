@@ -35,8 +35,13 @@ function(add_glsl_shader TARGET_NAME SHADER_FILE STAGE_TYPE)
 endfunction()
 
 
-add_glsl_shader(${PREF}shaders vertex.glsl vert)
-add_glsl_shader(${PREF}shaders fragment.glsl frag)
+add_glsl_shader(${PREF}shader_headers vertex.glsl vert)
+add_glsl_shader(${PREF}shader_headers fragment.glsl frag)
 
-add_glsl_shader(${PREF}shaders trsq_vertex.glsl vert)
-add_glsl_shader(${PREF}shaders trsq_fragment.glsl frag)
+add_glsl_shader(${PREF}shader_headers trsq_vertex.glsl vert)
+add_glsl_shader(${PREF}shader_headers trsq_fragment.glsl frag)
+
+add_library(${PREF}shaders STATIC spans.cc)
+target_include_directories(${PREF}shaders PUBLIC include)
+target_link_libraries(${PREF}shaders PRIVATE ${PREF}shader_headers)
+target_cxx23(${PREF}shaders)

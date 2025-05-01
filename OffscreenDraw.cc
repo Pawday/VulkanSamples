@@ -22,6 +22,8 @@
 #include <vulkan/vulkan_structs.hpp>
 #include <vulkan/vulkan_to_string.hpp>
 
+#include "shaders/spans.hh"
+
 #include "FormatTools.hh"
 #include "Messenger.hh"
 #include "SimpleVulkanObjects.hh"
@@ -268,17 +270,6 @@ struct HostVisMemBuffer
     std::byte *m_data_map = nullptr;
 };
 
-namespace {
-uint32_t vertex_shader_code[] = {
-#include "trsq_vertex.glsl.spv.hex"
-};
-
-uint32_t fragment_shader_code[] = {
-#include "trsq_fragment.glsl.spv.hex"
-};
-
-} // namespace
-
 int main()
 {
     vk::raii::Context ctx;
@@ -458,8 +449,8 @@ int main()
         D.get(),
         render_pass,
         pipeline_layout,
-        vertex_shader_code,
-        fragment_shader_code);
+        get_shader_vert_trig(),
+        get_shader_frag_trig());
 
     vk::raii::Framebuffer fbm = [&D, &render_pass, &image]() {
         vk::FramebufferCreateInfo fbm_ci{};

@@ -24,6 +24,8 @@
 #include <vulkan/vulkan_structs.hpp>
 #include <vulkan/vulkan_to_string.hpp>
 
+#include "shaders/spans.hh"
+
 #include "wayland/WaylandContext.hh"
 
 #include "FormatTools.hh"
@@ -342,13 +344,8 @@ try {
         return D.createPipelineLayout(p_layout_ci);
     }();
 
-    uint32_t vertex_shader_code[] = {
-#include "vertex.glsl.spv.hex"
-    };
-
-    uint32_t fragment_shader_code[] = {
-#include "fragment.glsl.spv.hex"
-    };
+    auto vertex_shader_code = get_shader_vert_trig();
+    auto fragment_shader_code = get_shader_frag_trig();
 
     vk::raii::Pipeline pipeline = SimpleVulkanObjects::make_pipeline(
         D,
