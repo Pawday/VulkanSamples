@@ -51,44 +51,37 @@ add_system_library(wayland-client)
 add_subdirectory(deps)
 add_subdirectory(shaders)
 
-add_executable(${PREF}OffscreenDraw
-    OffscreenDraw.cc
-
+add_library(${PREF}Common STATIC
     Messenger.cc
     SimpleVulkanObjects.cc
 )
 
-target_cxx23(${PREF}OffscreenDraw)
-target_strict_compilation(${PREF}OffscreenDraw)
-target_link_libraries(${PREF}OffscreenDraw PRIVATE
+target_cxx23(${PREF}Common)
+target_strict_compilation(${PREF}Common)
+target_link_libraries(${PREF}Common PUBLIC
     ${PREF}vk_headers
     ${PREF}shaders
 )
-target_compile_definitions(${PREF}OffscreenDraw PRIVATE)
 
+add_executable(${PREF}OffscreenDraw OffscreenDraw.cc)
+target_cxx23(${PREF}OffscreenDraw)
+target_strict_compilation(${PREF}OffscreenDraw)
+target_link_libraries(${PREF}OffscreenDraw PRIVATE ${PREF}Common)
 
 add_library(${PREF}WaylandContext STATIC)
 add_subdirectory(wayland)
 target_cxx23(${PREF}WaylandContext)
 target_strict_compilation(${PREF}WaylandContext)
-
 target_link_libraries(${PREF}WaylandContext PRIVATE ${PREF}syslib.wayland-client)
 target_link_libraries(${PREF}WaylandContext PUBLIC
     ${PREF}wayland_client.headers
     ${PREF}vk_headers
 )
 
-add_executable(${PREF}WaylandWindow
-    WaylandWindow.cc
-
-    Messenger.cc
-    SimpleVulkanObjects.cc
-)
-
+add_executable(${PREF}WaylandWindow WaylandWindow.cc)
 target_cxx23(${PREF}WaylandWindow)
 target_strict_compilation(${PREF}WaylandWindow)
-
 target_link_libraries(${PREF}WaylandWindow PRIVATE
+    ${PREF}Common
     ${PREF}WaylandContext
-    ${PREF}shaders
 )
