@@ -350,21 +350,21 @@ try {
             return o;
         }();
 
+    std::array<vk::ClearValue, 1> cls{};
+    cls[0].color = {0, 0, 0, 0};
+
     std::vector<vk::RenderPassBeginInfo> render_pass_begin_info =
-        [&render_pass, &swapchain_resolution, &fbms]() {
+        [&render_pass, &swapchain_resolution, &fbms, &cls]() {
             std::vector<vk::RenderPassBeginInfo> o;
 
             for (auto &fbm : fbms) {
                 vk::RenderPassBeginInfo rp_i{};
                 rp_i.renderPass = render_pass;
                 rp_i.framebuffer = fbm;
-                std::array<vk::ClearValue, 1> cls{};
-                cls[0].color = {0, 0, 0, 0};
                 rp_i.renderArea.extent = swapchain_resolution;
                 rp_i.setClearValues(cls);
                 o.push_back(rp_i);
             }
-
             return o;
         }();
 
