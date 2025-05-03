@@ -25,7 +25,7 @@
 
 #include "shaders/spans.hh"
 
-#include "wayland/WaylandContext.hh"
+#include "wayland/Context.hh"
 
 #include "FormatTools.hh"
 #include "Messenger.hh"

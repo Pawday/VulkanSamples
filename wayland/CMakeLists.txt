@@ -1,5 +1,5 @@
 target_sources(${PREF}WaylandContext PRIVATE
-    WaylandContextImpl.cc
+    ContextImpl.cc
     wayland-client-protocol.c
     xdg-shell.c
 )

@@ -22,7 +22,7 @@
 #include <wayland-client-protocol.h>
 #include <xdg-shell.h>
 
-#include "WaylandContext.hh"
+#include "Context.hh"
 
 namespace {
 
