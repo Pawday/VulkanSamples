@@ -1,14 +1,15 @@
 #pragma once
 
-#include <cstddef>
 #include <memory>
 #include <optional>
 
-#include <Wayland/VulkanWindow.hh>
+#include <cstddef>
 
+#include <vulkan/vulkan_raii.hpp>
+
+#include "Wayland/VulkanWindow.hh"
 #include "Wayland/Window.hh"
 #include "WindowImpl.hh"
-#include "vulkan/vulkan_raii.hpp"
 
 namespace Wayland {
 namespace Impl {

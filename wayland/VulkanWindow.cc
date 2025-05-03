@@ -4,19 +4,19 @@
 
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_raii.hpp>
+#include <vulkan/vulkan_to_string.hpp>
 
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 
-#include <Wayland/VulkanWindow.hh>
-#include <Wayland/Window.hh>
+#include "Wayland/VulkanWindow.hh"
+#include "Wayland/Window.hh"
 
 #include "VulkanWindowImpl.hh"
 #include "WindowImpl.hh"
-#include "vulkan/vulkan_enums.hpp"
-#include "vulkan/vulkan_to_string.hpp"
 
 // Provided by VK_KHR_wayland_surface
 using VkWaylandSurfaceCreateFlagsKHR = VkFlags;

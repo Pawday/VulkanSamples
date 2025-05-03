@@ -20,8 +20,8 @@
 #include <wayland-client-protocol.h>
 #include <xdg-shell.h>
 
-#include <Wayland/Context.hh>
-#include <Wayland/Window.hh>
+#include "Wayland/Context.hh"
+#include "Wayland/Window.hh"
 
 #include "ContextImpl.hh"
 #include "RegistryListener.hh"

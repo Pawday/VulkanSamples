@@ -4,8 +4,6 @@
 
 namespace Wayland {
 
-struct VulkanWindow;
-
 struct Window
 {
     Window(Window &&);

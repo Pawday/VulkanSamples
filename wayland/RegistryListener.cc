@@ -1,6 +1,7 @@
-#include <cstdint>
 #include <iostream>
 #include <string>
+
+#include <cstdint>
 
 #include <wayland-client-protocol.h>
 #include <xdg-shell.h>
