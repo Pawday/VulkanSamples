@@ -95,7 +95,7 @@ try {
         return VKI->createDebugUtilsMessengerEXT(msgr_ci);
     }();
 
-    Wayland::WaylandContext wl_ctx{VKI};
+    Wayland::Context wl_ctx{VKI};
 
     auto D_phy = [&VKI]() {
         auto phys = VKI->enumeratePhysicalDevices();

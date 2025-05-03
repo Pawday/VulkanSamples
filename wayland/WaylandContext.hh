@@ -4,41 +4,41 @@
 #include <vulkan/vulkan_raii.hpp>
 
 namespace Wayland {
-struct WaylandWindow;
+struct Window;
 
-struct WaylandContext
+struct Context
 {
     using SharedInstance = std::shared_ptr<vk::raii::Instance>;
-    WaylandContext(SharedInstance I);
-    WaylandContext(WaylandContext &&);
-    WaylandContext &operator=(WaylandContext &&);
-    ~WaylandContext();
+    Context(SharedInstance I);
+    Context(Context &&);
+    Context &operator=(Context &&);
+    ~Context();
 
-    WaylandWindow create_window();
+    Window create_window();
 
     void update();
 
-    WaylandContext(const WaylandContext &) = delete;
-    WaylandContext &operator=(const WaylandContext &) = delete;
+    Context(const Context &) = delete;
+    Context &operator=(const Context &) = delete;
 
   private:
     alignas(8) char _[16];
 };
 
-struct WaylandWindow
+struct Window
 {
-    WaylandWindow(WaylandWindow &&);
-    WaylandWindow &operator=(WaylandWindow &&);
-    ~WaylandWindow();
+    Window(Window &&);
+    Window &operator=(Window &&);
+    ~Window();
 
-    WaylandWindow(const WaylandWindow &) = delete;
-    WaylandWindow &operator=(const WaylandWindow &) = delete;
+    Window(const Window &) = delete;
+    Window &operator=(const Window &) = delete;
 
     vk::raii::SurfaceKHR &surface();
 
   private:
-    friend struct WaylandContext;
-    WaylandWindow();
+    friend struct Context;
+    Window();
     alignas(16) char _[128];
 };
 

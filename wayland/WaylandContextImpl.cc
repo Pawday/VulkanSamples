@@ -197,7 +197,7 @@ struct WaylandContextImpl;
 
 struct WaylandWindowImpl
 {
-    friend struct Wayland::WaylandContext;
+    friend struct Wayland::Context;
 
     WaylandWindowImpl(
         std::shared_ptr<WaylandContextImpl> context,
@@ -312,9 +312,9 @@ struct ContextHandles
 
 struct WaylandContextImpl
 {
-    friend struct Wayland::WaylandContext;
+    friend struct Wayland::Context;
 
-    using SharedInstance = Wayland::WaylandContext::SharedInstance;
+    using SharedInstance = Wayland::Context::SharedInstance;
     WaylandContextImpl(SharedInstance I);
     WaylandContextImpl(const WaylandContextImpl &) = delete;
     WaylandContextImpl(WaylandContextImpl &&) = default;
@@ -402,7 +402,7 @@ void ContextHandles::reset() noexcept
 
 struct WaylandContextImplShared
 {
-    using SharedInstance = Wayland::WaylandContext::SharedInstance;
+    using SharedInstance = Wayland::Context::SharedInstance;
     WaylandContextImplShared(SharedInstance I)
         : _(std::make_shared<WaylandContextImpl>(I))
     {
@@ -438,43 +438,43 @@ WaylandWindowImpl &win_impl(char (&data)[S])
 
 namespace Wayland {
 
-WaylandContext::WaylandContext(SharedInstance I)
+Context::Context(SharedInstance I)
 {
-    static_assert(alignof(WaylandContext) >= alignof(WaylandContextImplShared));
-    static_assert(sizeof(WaylandContext) >= sizeof(WaylandContextImplShared));
+    static_assert(alignof(Context) >= alignof(WaylandContextImplShared));
+    static_assert(sizeof(Context) >= sizeof(WaylandContextImplShared));
     new (_) WaylandContextImplShared{I};
 }
 
-WaylandContext::WaylandContext(WaylandContext &&o)
+Context::Context(Context &&o)
 {
     new (_) WaylandContextImplShared{std::move(ctx_impl(o._))};
 }
 
-WaylandContext &WaylandContext::operator=(WaylandContext &&o)
+Context &Context::operator=(Context &&o)
 {
     ctx_impl(_).operator=(std::move(ctx_impl(o._)));
     return *this;
 }
 
-WaylandContext::~WaylandContext()
+Context::~Context()
 {
     ctx_impl(_).~WaylandContextImplShared();
 }
 
-WaylandWindow::WaylandWindow() = default;
+Window::Window() = default;
 
-WaylandWindow::WaylandWindow(WaylandWindow &&o)
+Window::Window(Window &&o)
 {
     new (_) WaylandWindowImpl{std::move(win_impl(o._))};
 };
 
-WaylandWindow &WaylandWindow::operator=(WaylandWindow &&o)
+Window &Window::operator=(Window &&o)
 {
     win_impl(_).operator=(std::move(win_impl(o._)));
     return *this;
 }
 
-WaylandWindow::~WaylandWindow()
+Window::~Window()
 {
     win_impl(_).~WaylandWindowImpl();
 }
@@ -497,7 +497,7 @@ using vkCreateWaylandSurfaceKHR_PFN = VkResult (*)(
     const VkAllocationCallbacks *pAllocator,
     VkSurfaceKHR *pSurface);
 
-WaylandWindow WaylandContext::create_window()
+Window Context::create_window()
 {
     WaylandContextImplShared &ctx = ctx_impl(_);
 
@@ -531,20 +531,20 @@ WaylandWindow WaylandContext::create_window()
     vk::raii::SurfaceKHR cxx_surface{raii_instance, c_surface};
     win.set_surface(std::move(cxx_surface));
 
-    WaylandWindow output{};
+    Window output{};
 
-    static_assert(sizeof(WaylandWindow) >= sizeof(WaylandWindowImpl));
-    static_assert(alignof(WaylandWindow) >= alignof(WaylandWindowImpl));
+    static_assert(sizeof(Window) >= sizeof(WaylandWindowImpl));
+    static_assert(alignof(Window) >= alignof(WaylandWindowImpl));
     new (output._) WaylandWindowImpl(std::move(win));
     return output;
 }
 
-vk::raii::SurfaceKHR &WaylandWindow::surface()
+vk::raii::SurfaceKHR &Window::surface()
 {
     return win_impl(_).surface();
 }
 
-void WaylandContext::update()
+void Context::update()
 {
     ctx_impl(_)->update();
 };
