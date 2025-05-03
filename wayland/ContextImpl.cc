@@ -21,7 +21,8 @@
 #include <wayland-client-protocol.h>
 #include <xdg-shell.h>
 
-#include "Context.hh"
+#include <Wayland/Window.hh>
+
 #include "ContextImpl.hh"
 #include "RegistryListener.hh"
 #include "WindowImpl.hh"

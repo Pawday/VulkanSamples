@@ -5,7 +5,9 @@
 #include <wayland-client-core.h>
 #include <xdg-shell.h>
 
-#include "Context.hh"
+#include <Wayland/Context.hh>
+#include <Wayland/Window.hh>
+
 #include "ContextHandles.hh"
 #include "RegistryListener.hh"
 

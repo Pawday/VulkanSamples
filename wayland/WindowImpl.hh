@@ -9,7 +9,8 @@
 #include <wayland-client-protocol.h>
 #include <xdg-shell.h>
 
-#include "Context.hh"
+#include <Wayland/Context.hh>
+
 #include "ContextImpl.hh"
 #include "WindowHandles.hh"
 

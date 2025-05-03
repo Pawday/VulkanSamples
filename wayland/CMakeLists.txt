@@ -6,4 +6,9 @@ target_sources(${PREF}WaylandContext PRIVATE
     xdg-shell.c
 )
 
-target_include_directories(${PREF}WaylandContext PRIVATE .)
+target_include_directories(${PREF}WaylandContext
+    PUBLIC
+        include
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
