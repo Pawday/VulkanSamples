@@ -3,6 +3,8 @@
 #include <memory>
 #include <vulkan/vulkan_raii.hpp>
 
+#include "Window.hh"
+
 namespace Wayland {
 struct Window;
 
@@ -23,23 +25,6 @@ struct Context
 
   private:
     alignas(8) char _[16];
-};
-
-struct Window
-{
-    Window(Window &&);
-    Window &operator=(Window &&);
-    ~Window();
-
-    Window(const Window &) = delete;
-    Window &operator=(const Window &) = delete;
-
-    vk::raii::SurfaceKHR &surface();
-
-  private:
-    friend struct Context;
-    Window();
-    alignas(16) char _[128];
 };
 
 } // namespace Wayland
