@@ -95,7 +95,7 @@ try {
         return VKI->createDebugUtilsMessengerEXT(msgr_ci);
     }();
 
-    WaylandContext wl_ctx{VKI};
+    Wayland::WaylandContext wl_ctx{VKI};
 
     auto D_phy = [&VKI]() {
         auto phys = VKI->enumeratePhysicalDevices();
@@ -401,7 +401,7 @@ try {
         cmd_buffer.pipelineBarrier2(dep_info);
         cmd_buffer.beginRenderPass(rp_i, vk::SubpassContents::eInline);
         cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-        cmd_buffer.draw(3 * 1, 1, 0, 0);
+        cmd_buffer.draw(3 * 1, 2, 0, 0);
         cmd_buffer.endRenderPass();
 
         image_bar.newLayout = vk::ImageLayout::ePresentSrcKHR;

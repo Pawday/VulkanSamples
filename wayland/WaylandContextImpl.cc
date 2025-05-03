@@ -197,7 +197,7 @@ struct WaylandContextImpl;
 
 struct WaylandWindowImpl
 {
-    friend struct ::WaylandContext;
+    friend struct Wayland::WaylandContext;
 
     WaylandWindowImpl(
         std::shared_ptr<WaylandContextImpl> context,
@@ -312,9 +312,9 @@ struct ContextHandles
 
 struct WaylandContextImpl
 {
-    friend struct ::WaylandContext;
+    friend struct Wayland::WaylandContext;
 
-    using SharedInstance = WaylandContext::SharedInstance;
+    using SharedInstance = Wayland::WaylandContext::SharedInstance;
     WaylandContextImpl(SharedInstance I);
     WaylandContextImpl(const WaylandContextImpl &) = delete;
     WaylandContextImpl(WaylandContextImpl &&) = default;
@@ -402,7 +402,7 @@ void ContextHandles::reset() noexcept
 
 struct WaylandContextImplShared
 {
-    using SharedInstance = WaylandContext::SharedInstance;
+    using SharedInstance = Wayland::WaylandContext::SharedInstance;
     WaylandContextImplShared(SharedInstance I)
         : _(std::make_shared<WaylandContextImpl>(I))
     {
@@ -435,6 +435,8 @@ WaylandWindowImpl &win_impl(char (&data)[S])
 }
 
 } // namespace
+
+namespace Wayland {
 
 WaylandContext::WaylandContext(SharedInstance I)
 {
@@ -546,3 +548,5 @@ void WaylandContext::update()
 {
     ctx_impl(_)->update();
 };
+
+} // namespace Wayland

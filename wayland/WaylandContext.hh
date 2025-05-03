@@ -3,6 +3,7 @@
 #include <memory>
 #include <vulkan/vulkan_raii.hpp>
 
+namespace Wayland {
 struct WaylandWindow;
 
 struct WaylandContext
@@ -40,3 +41,5 @@ struct WaylandWindow
     WaylandWindow();
     alignas(16) char _[128];
 };
+
+} // namespace Wayland
