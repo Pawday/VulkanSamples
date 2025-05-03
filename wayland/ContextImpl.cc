@@ -22,6 +22,7 @@
 #include <xdg-shell.h>
 
 #include "Context.hh"
+#include "ContextHandles.hh"
 #include "RegistryListener.hh"
 #include "WindowHandles.hh"
 
@@ -107,53 +108,6 @@ xdg_surface_listener Window::xdg_surface_c_vtable = []() {
 
     return output;
 }();
-
-struct ContextHandles
-{
-    ContextHandles() = default;
-
-    ContextHandles(ContextHandles &&o) noexcept
-        : display(o.display), registry(o.registry)
-    {
-        o.display = nullptr;
-        o.registry = nullptr;
-    }
-    ContextHandles &operator=(ContextHandles &&o) noexcept
-    {
-        if (this == ::std::addressof(o)) {
-            return *this;
-        }
-
-        std::swap(display, o.display);
-        std::swap(registry, o.registry);
-
-        return *this;
-    }
-
-    void reset() noexcept
-    {
-        if (registry) {
-            wl_registry_destroy(registry);
-            registry = nullptr;
-        }
-
-        if (display) {
-            wl_display_disconnect(display);
-            display = nullptr;
-        }
-    }
-
-    ~ContextHandles()
-    {
-        reset();
-    }
-
-    ContextHandles(const ContextHandles &) = delete;
-    ContextHandles &operator=(const ContextHandles &) = delete;
-
-    wl_display *display = nullptr;
-    wl_registry *registry = nullptr;
-};
 
 struct ContextImpl
 {
