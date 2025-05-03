@@ -111,6 +111,8 @@ Window::Window() = default;
 
 Window::Window(Window &&o)
 {
+    static_assert(alignof(Window) >= alignof(Impl::Window));
+    static_assert(sizeof(Window) >= sizeof(Impl::Window));
     new (_) Impl::Window{std::move(Impl::cast_window(o._))};
 };
 

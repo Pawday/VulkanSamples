@@ -77,6 +77,8 @@ VulkanWindow::VulkanWindow(Impl::Window &w, SharedInstance instance)
 VulkanWindow::VulkanWindow(Wayland::Window &w, SharedInstance instance)
 {
     Impl::Window &impl_w = Impl::cast_window(w._);
+    static_assert(alignof(VulkanWindow) >= alignof(Impl::VulkanWindow));
+    static_assert(sizeof(VulkanWindow) >= sizeof(Impl::VulkanWindow));
     new (_) Impl::VulkanWindow{impl_w, instance};
 }
 
