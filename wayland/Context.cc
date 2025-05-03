@@ -107,26 +107,6 @@ Context::~Context()
     Impl::cast_context(_).~ContextShared();
 }
 
-Window::Window() = default;
-
-Window::Window(Window &&o)
-{
-    static_assert(alignof(Window) >= alignof(Impl::Window));
-    static_assert(sizeof(Window) >= sizeof(Impl::Window));
-    new (_) Impl::Window{std::move(Impl::cast_window(o._))};
-};
-
-Window &Window::operator=(Window &&o)
-{
-    Impl::cast_window(_).operator=(std::move(Impl::cast_window(o._)));
-    return *this;
-}
-
-Window::~Window()
-{
-    Impl::cast_window(_).~Window();
-}
-
 Window Context::create_window()
 {
     Impl::ContextShared &ctx = Impl::cast_context(_);

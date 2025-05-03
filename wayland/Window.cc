@@ -5,11 +5,13 @@
 
 #include <cstdint>
 
+#include <utility>
 #include <vulkan/vulkan_raii.hpp>
 #include <wayland-client-protocol.h>
 #include <xdg-shell.h>
 
 #include "ContextImpl.hh"
+#include "Wayland/Window.hh"
 #include "WindowImpl.hh"
 
 namespace Wayland {
@@ -64,4 +66,27 @@ xdg_surface_listener Window::xdg_surface_c_vtable = []() {
 }();
 
 } // namespace Impl
+} // namespace Wayland
+
+namespace Wayland {
+
+Window::Window() = default;
+
+Window::Window(Window &&o)
+{
+    static_assert(alignof(Window) >= alignof(Impl::Window));
+    static_assert(sizeof(Window) >= sizeof(Impl::Window));
+    new (_) Impl::Window{std::move(Impl::cast_window(o._))};
+};
+
+Window &Window::operator=(Window &&o)
+{
+    Impl::cast_window(_).operator=(std::move(Impl::cast_window(o._)));
+    return *this;
+}
+
+Window::~Window()
+{
+    Impl::cast_window(_).~Window();
+}
 } // namespace Wayland
