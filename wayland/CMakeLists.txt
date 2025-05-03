@@ -1,7 +1,7 @@
 target_sources(${PREF}WaylandContext PRIVATE
-    ContextImpl.cc
+    Context.cc
     RegistryListener.cc
-    WindowImpl.cc
+    Window.cc
     VulkanWindow.cc
     wayland-client-protocol.c
     xdg-shell.c
