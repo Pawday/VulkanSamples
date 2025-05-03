@@ -90,10 +90,10 @@ target_link_libraries(${PREF}WaylandContext PUBLIC
     ${PREF}vk_headers
 )
 
-add_executable(${PREF}WaylandWindow WaylandWindow.cc)
-target_cxx23(${PREF}WaylandWindow)
-target_strict_compilation(${PREF}WaylandWindow)
-target_link_libraries(${PREF}WaylandWindow PRIVATE
+add_executable(${PREF}WaylandSurface WaylandSurface.cc)
+target_cxx23(${PREF}WaylandSurface)
+target_strict_compilation(${PREF}WaylandSurface)
+target_link_libraries(${PREF}WaylandSurface PRIVATE
     ${PREF}Common
     ${PREF}WaylandContext
 )

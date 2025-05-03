@@ -1,9 +1,9 @@
 #include <algorithm>
 #include <array>
-#include <cstdint>
 #include <exception>
 #include <format>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <span>
@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include <cstdint>
 #include <cstdlib>
 
 #include <vulkan/vulkan.hpp>
@@ -22,11 +23,11 @@
 #include <vulkan/vulkan_structs.hpp>
 #include <vulkan/vulkan_to_string.hpp>
 
-#include "shaders/spans.hh"
-
 #include <Wayland/Context.hh>
 #include <Wayland/VulkanWindow.hh>
 #include <Wayland/Window.hh>
+
+#include "shaders/spans.hh"
 
 #include "FormatTools.hh"
 #include "Messenger.hh"
