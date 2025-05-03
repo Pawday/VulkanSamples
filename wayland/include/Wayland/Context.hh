@@ -1,8 +1,5 @@
 #pragma once
 
-#include <memory>
-#include <vulkan/vulkan_raii.hpp>
-
 #include "Window.hh"
 
 namespace Wayland {
@@ -10,8 +7,7 @@ struct Window;
 
 struct Context
 {
-    using SharedInstance = std::shared_ptr<vk::raii::Instance>;
-    Context(SharedInstance I);
+    Context();
     Context(Context &&);
     Context &operator=(Context &&);
     ~Context();

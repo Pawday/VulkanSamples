@@ -4,7 +4,6 @@
 #include <exception>
 #include <format>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <span>
@@ -25,7 +24,9 @@
 
 #include "shaders/spans.hh"
 
-#include "Wayland/Context.hh"
+#include <Wayland/Context.hh>
+#include <Wayland/VulkanWindow.hh>
+#include <Wayland/Window.hh>
 
 #include "FormatTools.hh"
 #include "Messenger.hh"
@@ -95,7 +96,7 @@ try {
         return VKI->createDebugUtilsMessengerEXT(msgr_ci);
     }();
 
-    Wayland::Context wl_ctx{VKI};
+    Wayland::Context wl_ctx;
 
     auto D_phy = [&VKI]() {
         auto phys = VKI->enumeratePhysicalDevices();
@@ -158,8 +159,9 @@ try {
 
     auto &D = Q_dev.dev;
 
-    auto win = wl_ctx.create_window();
-    auto &surface = win.surface();
+    Wayland::Window win = wl_ctx.create_window();
+    Wayland::VulkanWindow vk_win{win, VKI};
+    auto &surface = vk_win.surface();
 
     vk::SurfaceFormatKHR surface_format = [&D_phy, &surface]() {
         auto surface_formants = D_phy.getSurfaceFormatsKHR(surface);

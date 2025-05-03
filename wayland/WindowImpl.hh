@@ -1,7 +1,7 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
-#include <optional>
 
 #include <cstdint>
 
@@ -19,8 +19,6 @@ namespace Impl {
 
 struct Window
 {
-    friend struct Wayland::Context;
-
     Window(
         std::shared_ptr<ContextImpl> context,
         wl_compositor *compositor,
@@ -32,22 +30,22 @@ struct Window
     Window(const Window &) = delete;
     Window &operator=(const Window &) = delete;
 
-    vk::raii::SurfaceKHR &surface()
-    {
-        return _vk_surface.value();
-    }
-
-  private:
     std::shared_ptr<ContextImpl> _context;
     WindowHandles _h;
-    std::optional<vk::raii::SurfaceKHR> _vk_surface;
-
-    void set_surface(vk::raii::SurfaceKHR &&surface);
 
     void configure(xdg_surface *xdg_surface, uint32_t serial);
 
+  private:
     static xdg_surface_listener xdg_surface_c_vtable;
 };
+
+namespace {
+template <size_t S>
+Window &cast_window(char (&data)[S])
+{
+    return *reinterpret_cast<Window *>(data);
+}
+} // namespace
 
 } // namespace Impl
 } // namespace Wayland

@@ -2,7 +2,6 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 #include <cstdint>
 
@@ -43,14 +42,6 @@ Window::Window(
     wl_surface_commit(_h.surface);
 
     xdg_toplevel_set_title(_h.top_level, "Vulkan wayland sample");
-}
-
-void Window::set_surface(vk::raii::SurfaceKHR &&surface)
-{
-    if (_vk_surface.has_value()) {
-        throw std::runtime_error("Double surface initialisation");
-    }
-    _vk_surface = std::move(surface);
 }
 
 void Window::configure(

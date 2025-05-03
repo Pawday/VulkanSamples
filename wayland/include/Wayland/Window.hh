@@ -4,6 +4,8 @@
 
 namespace Wayland {
 
+struct VulkanWindow;
+
 struct Window
 {
     Window(Window &&);
@@ -13,10 +15,9 @@ struct Window
     Window(const Window &) = delete;
     Window &operator=(const Window &) = delete;
 
-    vk::raii::SurfaceKHR &surface();
-
   private:
     friend struct Context;
+    friend struct VulkanWindow;
     Window();
     alignas(16) char _[128];
 };
