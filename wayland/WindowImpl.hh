@@ -20,7 +20,7 @@ namespace Impl {
 struct Window
 {
     Window(
-        std::shared_ptr<ContextImpl> context,
+        std::shared_ptr<Context> context,
         wl_compositor *compositor,
         xdg_wm_base *xdg_base);
 
@@ -30,7 +30,7 @@ struct Window
     Window(const Window &) = delete;
     Window &operator=(const Window &) = delete;
 
-    std::shared_ptr<ContextImpl> _context;
+    std::shared_ptr<Context> _context;
     WindowHandles _h;
 
     void configure(xdg_surface *xdg_surface, uint32_t serial);

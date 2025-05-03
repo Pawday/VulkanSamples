@@ -16,7 +16,7 @@ namespace Wayland {
 namespace Impl {
 
 Window::Window(
-    std::shared_ptr<ContextImpl> context,
+    std::shared_ptr<Context> context,
     wl_compositor *compositor,
     xdg_wm_base *xdg_base)
     : _context(context)

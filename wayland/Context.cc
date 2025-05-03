@@ -30,18 +30,18 @@
 namespace Wayland {
 namespace Impl {
 
-xdg_wm_base_listener ContextImpl::xdg_base_c_vtable = []() {
+xdg_wm_base_listener Context::xdg_base_c_vtable = []() {
     xdg_wm_base_listener output{};
 
     output.ping = [](void *data, xdg_wm_base *xdg_wm_base, uint32_t serial) {
-        ContextImpl &ctx = *reinterpret_cast<ContextImpl *>(data);
+        Context &ctx = *reinterpret_cast<Context *>(data);
         ctx.xdg_ping(xdg_wm_base, serial);
     };
 
     return output;
 }();
 
-ContextImpl::ContextImpl()
+Context::Context()
 {
     _h.display = wl_display_connect(nullptr);
     if (_h.display == nullptr) {
@@ -62,7 +62,7 @@ ContextImpl::ContextImpl()
     wl_display_roundtrip(_h.display);
 
     xdg_wm_base_add_listener(
-        _registry.xdg_base(), &ContextImpl::xdg_base_c_vtable, this);
+        _registry.xdg_base(), &Context::xdg_base_c_vtable, this);
 
     wl_display_roundtrip(_h.display);
 
@@ -73,7 +73,7 @@ ContextImpl::ContextImpl()
     wl_display_roundtrip(_h.display);
 }
 
-void ContextImpl::xdg_ping(struct xdg_wm_base *xdg_wm_base, uint32_t serial)
+void Context::xdg_ping(struct xdg_wm_base *xdg_wm_base, uint32_t serial)
 {
     std::cout << "Ping " << std::to_string(serial) << '\n';
     xdg_wm_base_pong(xdg_wm_base, serial);

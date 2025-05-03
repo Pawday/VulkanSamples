@@ -16,13 +16,13 @@
 namespace Wayland {
 namespace Impl {
 
-struct ContextImpl
+struct Context
 {
-    ContextImpl();
-    ContextImpl(const ContextImpl &) = delete;
-    ContextImpl(ContextImpl &&) = default;
-    ContextImpl &operator=(const ContextImpl &) = delete;
-    ContextImpl &operator=(ContextImpl &&) = default;
+    Context();
+    Context(const Context &) = delete;
+    Context(Context &&) = default;
+    Context &operator=(const Context &) = delete;
+    Context &operator=(Context &&) = default;
 
     void update()
     {
@@ -38,22 +38,22 @@ struct ContextImpl
 
 struct ContextShared
 {
-    ContextShared() : _(std::make_shared<ContextImpl>())
+    ContextShared() : _(std::make_shared<Context>())
     {
     }
 
-    operator std::shared_ptr<ContextImpl>()
+    operator std::shared_ptr<Context>()
     {
         return _;
     }
 
-    ContextImpl *operator->()
+    Context *operator->()
     {
         return _.get();
     }
 
   private:
-    std::shared_ptr<ContextImpl> _;
+    std::shared_ptr<Context> _;
 };
 
 namespace {
