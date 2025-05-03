@@ -122,7 +122,6 @@ vk::DebugUtilsMessengerCreateInfoEXT
     vk::DebugUtilsMessageTypeFlagsEXT types;
     using TypeF = vk::DebugUtilsMessageTypeFlagBitsEXT;
     types |= TypeF::eValidation;
-    types |= TypeF::eDeviceAddressBinding;
     types |= TypeF::eGeneral;
     types |= TypeF::ePerformance;
     output.setMessageType(types);
