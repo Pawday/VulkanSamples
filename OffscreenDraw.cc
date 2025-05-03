@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <array>
 #include <format>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -270,6 +272,20 @@ struct HostVisMemBuffer
     std::byte *m_data_map = nullptr;
 };
 
+namespace {
+const char *grayscale_pixel(uint8_t val)
+{
+    constexpr const char *lut[] = {" ", "▁", "▂", "▃", "▄", "▅", "▇", "█"};
+    constexpr size_t lut_size = sizeof(lut) / sizeof(lut[0]);
+
+    size_t index = val;
+    index *= lut_size;
+    index /= std::numeric_limits<decltype(val)>::max();
+    index = std::clamp(index, 0ul, lut_size - 1);
+    return lut[index];
+}
+} // namespace
+
 int main()
 {
     vk::raii::Context ctx;
@@ -470,7 +486,7 @@ int main()
     main_cmdb.setScissor(0, scizors);
     main_cmdb.beginRenderPass(rp_i, vk::SubpassContents::eInline);
     main_cmdb.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-    main_cmdb.draw(3 * 1, 1, 0, 0);
+    main_cmdb.draw(3 * 1, 2, 0, 0);
     main_cmdb.endRenderPass();
     main_cmdb.end();
 
@@ -555,20 +571,9 @@ int main()
                 std::cout << "| ";
                 for (size_t x = 0; x < w; x++) {
                     size_t pxl_idx = (y * w + x) * 4;
-
-                    char lut[] = " `.-':_,^=;><+!rc*/"
-                                 "z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]"
-                                 "2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@";
-                    constexpr size_t lut_sz = sizeof(lut) - 2;
-
-                    uint32_t val = std::to_integer<uint32_t>(
+                    uint32_t val = std::to_integer<uint8_t>(
                         data[pxl_idx + color_component_idx]);
-
-                    val *= lut_sz;
-                    val /= 255;
-                    val %= (lut_sz + 1);
-
-                    std::cout << lut[val];
+                    std::cout << grayscale_pixel(val);
                 }
                 std::cout << " |";
                 std::cout << '\n';
