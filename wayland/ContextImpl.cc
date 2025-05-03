@@ -24,7 +24,8 @@
 
 #include "Context.hh"
 
-namespace {
+namespace Wayland {
+namespace Impl {
 
 struct RegistryListener
 {
@@ -193,14 +194,14 @@ struct WindowHandles
     xdg_toplevel *top_level = nullptr;
 };
 
-struct WaylandContextImpl;
+struct ContextImpl;
 
-struct WaylandWindowImpl
+struct Window
 {
     friend struct Wayland::Context;
 
-    WaylandWindowImpl(
-        std::shared_ptr<WaylandContextImpl> context,
+    Window(
+        std::shared_ptr<ContextImpl> context,
         wl_compositor *compositor,
         xdg_wm_base *xdg_base)
         : _context(context)
@@ -216,7 +217,7 @@ struct WaylandWindowImpl
         }
 
         xdg_surface_add_listener(
-            _h.xdg_surface, &WaylandWindowImpl::xdg_surface_c_vtable, this);
+            _h.xdg_surface, &Window::xdg_surface_c_vtable, this);
 
         _h.top_level = xdg_surface_get_toplevel(_h.xdg_surface);
         if (_h.top_level == nullptr) {
@@ -228,11 +229,11 @@ struct WaylandWindowImpl
         xdg_toplevel_set_title(_h.top_level, "Vulkan wayland sample");
     }
 
-    WaylandWindowImpl(WaylandWindowImpl &&) = default;
-    WaylandWindowImpl &operator=(WaylandWindowImpl &&) = default;
+    Window(Window &&) = default;
+    Window &operator=(Window &&) = default;
 
-    WaylandWindowImpl(const WaylandWindowImpl &) = delete;
-    WaylandWindowImpl &operator=(const WaylandWindowImpl &) = delete;
+    Window(const Window &) = delete;
+    Window &operator=(const Window &) = delete;
 
     vk::raii::SurfaceKHR &surface()
     {
@@ -240,7 +241,7 @@ struct WaylandWindowImpl
     }
 
   private:
-    std::shared_ptr<WaylandContextImpl> _context;
+    std::shared_ptr<ContextImpl> _context;
     WindowHandles _h;
     std::optional<vk::raii::SurfaceKHR> _vk_surface;
 
@@ -261,13 +262,12 @@ struct WaylandWindowImpl
     static xdg_surface_listener xdg_surface_c_vtable;
 };
 
-xdg_surface_listener WaylandWindowImpl::xdg_surface_c_vtable = []() {
+xdg_surface_listener Window::xdg_surface_c_vtable = []() {
     xdg_surface_listener output{};
 
     output.configure =
         [](void *data, xdg_surface *xdg_surface, uint32_t serial) {
-            WaylandWindowImpl &window =
-                *reinterpret_cast<WaylandWindowImpl *>(data);
+            Window &window = *reinterpret_cast<Window *>(data);
             window.configure(xdg_surface, serial);
         };
 
@@ -296,7 +296,18 @@ struct ContextHandles
         return *this;
     }
 
-    void reset() noexcept;
+    void reset() noexcept
+    {
+        if (registry) {
+            wl_registry_destroy(registry);
+            registry = nullptr;
+        }
+
+        if (display) {
+            wl_display_disconnect(display);
+            display = nullptr;
+        }
+    }
 
     ~ContextHandles()
     {
@@ -310,16 +321,16 @@ struct ContextHandles
     wl_registry *registry = nullptr;
 };
 
-struct WaylandContextImpl
+struct ContextImpl
 {
     friend struct Wayland::Context;
 
     using SharedInstance = Wayland::Context::SharedInstance;
-    WaylandContextImpl(SharedInstance I);
-    WaylandContextImpl(const WaylandContextImpl &) = delete;
-    WaylandContextImpl(WaylandContextImpl &&) = default;
-    WaylandContextImpl &operator=(const WaylandContextImpl &) = delete;
-    WaylandContextImpl &operator=(WaylandContextImpl &&) = default;
+    ContextImpl(SharedInstance I);
+    ContextImpl(const ContextImpl &) = delete;
+    ContextImpl(ContextImpl &&) = default;
+    ContextImpl &operator=(const ContextImpl &) = delete;
+    ContextImpl &operator=(ContextImpl &&) = default;
 
     void update()
     {
@@ -332,26 +343,22 @@ struct WaylandContextImpl
 
     SharedInstance _instance;
 
-    void xdg_ping(struct xdg_wm_base *xdg_wm_base, uint32_t serial)
-    {
-        std::cout << "Ping " << std::to_string(serial) << '\n';
-        xdg_wm_base_pong(xdg_wm_base, serial);
-    }
+    void xdg_ping(struct xdg_wm_base *xdg_wm_base, uint32_t serial);
     static xdg_wm_base_listener xdg_base_c_vtable;
 };
 
-xdg_wm_base_listener WaylandContextImpl::xdg_base_c_vtable = []() {
+xdg_wm_base_listener ContextImpl::xdg_base_c_vtable = []() {
     xdg_wm_base_listener output{};
 
     output.ping = [](void *data, xdg_wm_base *xdg_wm_base, uint32_t serial) {
-        WaylandContextImpl &ctx = *reinterpret_cast<WaylandContextImpl *>(data);
+        ContextImpl &ctx = *reinterpret_cast<ContextImpl *>(data);
         ctx.xdg_ping(xdg_wm_base, serial);
     };
 
     return output;
 }();
 
-WaylandContextImpl::WaylandContextImpl(SharedInstance I) : _instance(I)
+ContextImpl::ContextImpl(SharedInstance I) : _instance(I)
 {
     if (_instance == nullptr) {
         throw std::runtime_error("vkInstance is null");
@@ -376,7 +383,7 @@ WaylandContextImpl::WaylandContextImpl(SharedInstance I) : _instance(I)
     wl_display_roundtrip(_h.display);
 
     xdg_wm_base_add_listener(
-        _registry.xdg_base(), &WaylandContextImpl::xdg_base_c_vtable, this);
+        _registry.xdg_base(), &ContextImpl::xdg_base_c_vtable, this);
 
     wl_display_roundtrip(_h.display);
 
@@ -387,96 +394,91 @@ WaylandContextImpl::WaylandContextImpl(SharedInstance I) : _instance(I)
     wl_display_roundtrip(_h.display);
 }
 
-void ContextHandles::reset() noexcept
+void ContextImpl::xdg_ping(struct xdg_wm_base *xdg_wm_base, uint32_t serial)
 {
-    if (registry) {
-        wl_registry_destroy(registry);
-        registry = nullptr;
-    }
-
-    if (display) {
-        wl_display_disconnect(display);
-        display = nullptr;
-    }
+    std::cout << "Ping " << std::to_string(serial) << '\n';
+    xdg_wm_base_pong(xdg_wm_base, serial);
 }
 
-struct WaylandContextImplShared
+struct ContextShared
 {
     using SharedInstance = Wayland::Context::SharedInstance;
-    WaylandContextImplShared(SharedInstance I)
-        : _(std::make_shared<WaylandContextImpl>(I))
+    ContextShared(SharedInstance I) : _(std::make_shared<ContextImpl>(I))
     {
     }
 
-    operator std::shared_ptr<WaylandContextImpl>()
+    operator std::shared_ptr<ContextImpl>()
     {
         return _;
     }
 
-    WaylandContextImpl *operator->()
+    ContextImpl *operator->()
     {
         return _.get();
     }
 
   private:
-    std::shared_ptr<WaylandContextImpl> _;
+    std::shared_ptr<ContextImpl> _;
 };
 
+namespace {
 template <size_t S>
-WaylandContextImplShared &ctx_impl(char (&data)[S])
+ContextShared &cast_context(char (&data)[S])
 {
-    return *reinterpret_cast<WaylandContextImplShared *>(data);
+    return *reinterpret_cast<ContextShared *>(data);
 }
 
 template <size_t S>
-WaylandWindowImpl &win_impl(char (&data)[S])
+Window &cast_window(char (&data)[S])
 {
-    return *reinterpret_cast<WaylandWindowImpl *>(data);
+    return *reinterpret_cast<Window *>(data);
 }
-
 } // namespace
+
+} // namespace Impl
+} // namespace Wayland
 
 namespace Wayland {
 
 Context::Context(SharedInstance I)
 {
-    static_assert(alignof(Context) >= alignof(WaylandContextImplShared));
-    static_assert(sizeof(Context) >= sizeof(WaylandContextImplShared));
-    new (_) WaylandContextImplShared{I};
+    static_assert(alignof(Context) >= alignof(Impl::ContextShared));
+    static_assert(sizeof(Context) >= sizeof(Impl::ContextShared));
+    new (_) Impl::ContextShared{I};
 }
 
 Context::Context(Context &&o)
 {
-    new (_) WaylandContextImplShared{std::move(ctx_impl(o._))};
+    new (_) Impl::ContextShared{std::move(Impl::cast_context(o._))};
 }
 
 Context &Context::operator=(Context &&o)
 {
-    ctx_impl(_).operator=(std::move(ctx_impl(o._)));
+    Impl::cast_context(_).operator=(std::move(Impl::cast_context(o._)));
     return *this;
 }
 
 Context::~Context()
 {
-    ctx_impl(_).~WaylandContextImplShared();
+    Impl::cast_context(_).~ContextShared();
 }
 
 Window::Window() = default;
 
 Window::Window(Window &&o)
 {
-    new (_) WaylandWindowImpl{std::move(win_impl(o._))};
+    new (_) Impl::Window{std::move(Impl::cast_window(o._))};
 };
 
 Window &Window::operator=(Window &&o)
 {
-    win_impl(_).operator=(std::move(win_impl(o._)));
+    Impl::cast_window(_).operator=(std::move(Impl::cast_window(o._)));
     return *this;
 }
 
 Window::~Window()
 {
-    win_impl(_).~WaylandWindowImpl();
+    Impl::cast_window(_).~Window();
 }
 
 // Provided by VK_KHR_wayland_surface
@@ -499,7 +501,7 @@ using vkCreateWaylandSurfaceKHR_PFN = VkResult (*)(
 
 Window Context::create_window()
 {
-    WaylandContextImplShared &ctx = ctx_impl(_);
+    Impl::ContextShared &ctx = Impl::cast_context(_);
 
     auto vkCreateWaylandSurfaceKHR =
         reinterpret_cast<vkCreateWaylandSurfaceKHR_PFN>(
@@ -508,7 +510,7 @@ Window Context::create_window()
         throw std::runtime_error("Cannot load vkCreateWaylandSurfaceKHR()");
     }
 
-    WaylandWindowImpl win{
+    Impl::Window win{
         ctx, ctx->_registry.compositor(), ctx->_registry.xdg_base()};
 
     VkSurfaceKHR c_surface{};
@@ -533,20 +535,20 @@ Window Context::create_window()
 
     Window output{};
 
-    static_assert(sizeof(Window) >= sizeof(WaylandWindowImpl));
-    static_assert(alignof(Window) >= alignof(WaylandWindowImpl));
-    new (output._) WaylandWindowImpl(std::move(win));
+    static_assert(sizeof(Window) >= sizeof(Impl::Window));
+    static_assert(alignof(Window) >= alignof(Impl::Window));
+    new (output._) Impl::Window(std::move(win));
     return output;
 }
 
 vk::raii::SurfaceKHR &Window::surface()
 {
-    return win_impl(_).surface();
+    return Impl::cast_window(_).surface();
 }
 
 void Context::update()
 {
-    ctx_impl(_)->update();
+    Impl::cast_context(_)->update();
 };
 
 } // namespace Wayland
