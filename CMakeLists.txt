@@ -16,7 +16,6 @@ add_host_tool(wayland-scanner HAS_WAYLAND_SCANNER)
 if(NOT ${HAS_WAYLAND_SCANNER})
     message(FATAL_ERROR "No wayland-scanner")
 endif()
-
 function(target_cxx23 tgt)
     set_property(TARGET ${tgt} PROPERTY CXX_STANDARD 23)
     set_property(TARGET ${tgt} PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -55,7 +54,7 @@ add_executable(${PREF}ICDLoadLeakTest ICDLoadLeakTest.c)
 
 
 add_library(${PREF}CPPTraceLauncher STATIC CPPTraceLauncher.cc)
-target_link_libraries(${PREF}CPPTraceLauncher PUBLIC ${PREF}cpptrace)
+target_link_libraries(${PREF}CPPTraceLauncher PUBLIC ${PREF}cpptrace.headers)
 
 add_library(${PREF}Launcher ALIAS ${PREF}CPPTraceLauncher)
 
@@ -68,7 +67,7 @@ function(add_application TARGET_NAME)
     set(EXEC_TARGET_NAME "${TARGET_NAME}.exec")
     add_executable(${EXEC_TARGET_NAME} $<TARGET_OBJECTS:${PREF}Launcher>)
     set_target_properties(${EXEC_TARGET_NAME} PROPERTIES OUTPUT_NAME "${TARGET_NAME}")
-    target_link_libraries(${EXEC_TARGET_NAME} PRIVATE ${PREF}Launcher ${TARGET_NAME})
+    target_link_libraries(${EXEC_TARGET_NAME} PRIVATE ${PREF}cpptrace.static ${PREF}Launcher ${TARGET_NAME})
 endfunction()
 
 add_library(${PREF}Common STATIC

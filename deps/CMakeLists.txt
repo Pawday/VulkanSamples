@@ -1,9 +1,3 @@
-add_library(${PREF}cpptrace INTERFACE)
-target_link_libraries(${PREF}cpptrace INTERFACE
-    ${PREF}cpptrace.headers
-    ${PREF}cpptrace.static
-)
-
 list(APPEND STATIC_LIBS
     libdwarf
     cpptrace
