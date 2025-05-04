@@ -1,7 +1,11 @@
-add_library(${PREF}cpptrace.headers INTERFACE)
-add_library(${PREF}cpptrace.static STATIC)
+set(USE_DWARF 1)
+set(USE_ADDR2LINE 0)
 
+set(CPPTRACE_SOURCES_PREFIX "src/src")
 target_include_directories(${PREF}cpptrace.headers INTERFACE src/include)
+target_include_directories(${PREF}cpptrace.static PRIVATE ${CPPTRACE_SOURCES_PREFIX})
+target_link_libraries(${PREF}cpptrace.static PRIVATE ${PREF}cpptrace.headers)
+
 list(APPEND CPPTRACE_RELATIVE_SOURCES
     binary/elf.cpp
     binary/mach-o.cpp
@@ -46,18 +50,14 @@ list(APPEND CPPTRACE_RELATIVE_SOURCES
     platform/dbghelp_utils.cpp
 )
 
-set(CPPTRACE_SOURCES_PREFIX "src/src")
 list(TRANSFORM CPPTRACE_RELATIVE_SOURCES PREPEND "${CPPTRACE_SOURCES_PREFIX}/" OUTPUT_VARIABLE CPPTRACE_SOURCES)
-
 target_sources(${PREF}cpptrace.static PRIVATE ${CPPTRACE_SOURCES})
+
 target_compile_definitions(${PREF}cpptrace.static PRIVATE
     CPPTRACE_UNWIND_WITH_UNWIND
     CPPTRACE_DEMANGLE_WITH_CXXABI
     CPPTRACE_GET_SYMBOLS_WITH_NOTHING
 )
-
-set(USE_DWARF 1)
-set(USE_ADDR2LINE 0)
 
 if(USE_DWARF)
     target_compile_definitions(${PREF}cpptrace.static PRIVATE CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
@@ -76,11 +76,3 @@ if(USE_ADDR2LINE)
     )
 endif()
 
-target_include_directories(${PREF}cpptrace.static PRIVATE ${CPPTRACE_SOURCES_PREFIX})
-target_link_libraries(${PREF}cpptrace.static PRIVATE ${PREF}cpptrace.headers)
-
-add_library(${PREF}cpptrace INTERFACE)
-target_link_libraries(${PREF}cpptrace INTERFACE
-    ${PREF}cpptrace.headers
-    ${PREF}cpptrace.static
-)
