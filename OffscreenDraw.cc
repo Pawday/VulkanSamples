@@ -4,6 +4,7 @@
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -304,7 +305,7 @@ int main()
             return false;
         });
 
-    vk::raii::Instance VKI = [&ctx, &VKI_msgr, &msgr_ci]() {
+    std::shared_ptr<vk::raii::Instance> VKI = [&ctx, &VKI_msgr, &msgr_ci]() {
         vk::InstanceCreateInfo in_ci{};
 
         do {
@@ -332,17 +333,17 @@ int main()
         in_ci.setPEnabledExtensionNames(VKI_exts);
         in_ci.setPEnabledLayerNames(layers);
 
-        return ctx.createInstance(in_ci);
+        return std::make_shared<vk::raii::Instance>(ctx.createInstance(in_ci));
     }();
 
     vk::raii::DebugUtilsMessengerEXT msgr = [&]() {
-        return VKI.createDebugUtilsMessengerEXT(msgr_ci);
+        return VKI->createDebugUtilsMessengerEXT(msgr_ci);
     }();
 
     DeviceWrap D = [&VKI]() {
         std::optional<vk::raii::PhysicalDevice> output_phys;
         std::vector<vk::raii::PhysicalDevice> devs =
-            VKI.enumeratePhysicalDevices();
+            VKI->enumeratePhysicalDevices();
         for (size_t idx = 0; idx < devs.size(); idx++) {
             auto &dev = devs[idx];
 
