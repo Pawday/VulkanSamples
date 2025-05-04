@@ -1,5 +1,6 @@
 set(LIBDWARF_SOURCES_PREFIX "src/src/lib/libdwarf")
 
+target_include_directories(${PREF}libdwarf.headers INTERFACE ${LIBDWARF_SOURCES_PREFIX})
 target_include_directories(${PREF}libdwarf.static PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/include")
 
 set(HAVE_STDINT_H ON)
@@ -7,7 +8,6 @@ set(HAVE_UNISTD_H ON)
 set(HAVE_FCNTL_H ON)
 configure_file("src/cmake/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
 
-target_include_directories(${PREF}libdwarf.headers INTERFACE ${LIBDWARF_SOURCES_PREFIX})
 list(APPEND LIBDWARF_RELATIVE_SOURCES
     dwarf_abbrev.c
     dwarf_alloc.c
@@ -73,3 +73,4 @@ list(APPEND LIBDWARF_RELATIVE_SOURCES
 
 list(TRANSFORM LIBDWARF_RELATIVE_SOURCES PREPEND "${LIBDWARF_SOURCES_PREFIX}/" OUTPUT_VARIABLE LIBDWARF_SOURCES)
 target_sources(${PREF}libdwarf.static PRIVATE ${LIBDWARF_SOURCES})
+
