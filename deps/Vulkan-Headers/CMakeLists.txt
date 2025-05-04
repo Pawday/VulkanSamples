@@ -1,1 +1,1 @@
-target_include_directories(${PREF}vk_headers INTERFACE src/include)
+target_include_directories(${PREF}vulkan.headers INTERFACE src/include)

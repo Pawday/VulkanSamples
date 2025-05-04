@@ -1,5 +1,3 @@
-add_library(${PREF}vk_headers INTERFACE)
-
 add_library(${PREF}cpptrace INTERFACE)
 target_link_libraries(${PREF}cpptrace INTERFACE
     ${PREF}cpptrace.headers
@@ -12,6 +10,7 @@ list(APPEND STATIC_LIBS
 )
 
 list(APPEND HEADER_LIBS
+    vulkan
     wayland_client
     libdwarf
     cpptrace

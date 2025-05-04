@@ -79,7 +79,7 @@ add_library(${PREF}Common STATIC
 target_cxx23(${PREF}Common)
 target_strict_compilation(${PREF}Common)
 target_link_libraries(${PREF}Common PUBLIC
-    ${PREF}vk_headers
+    ${PREF}vulkan.headers
     ${PREF}shaders
 )
 target_precompile_headers(${PREF}Common
@@ -103,7 +103,7 @@ target_strict_compilation(${PREF}WaylandContext)
 target_link_libraries(${PREF}WaylandContext PRIVATE ${PREF}syslib.wayland-client)
 target_link_libraries(${PREF}WaylandContext PUBLIC
     ${PREF}wayland_client.headers
-    ${PREF}vk_headers
+    ${PREF}vulkan.headers
 )
 
 add_application(${PREF}WaylandSurface WaylandSurface.cc)
