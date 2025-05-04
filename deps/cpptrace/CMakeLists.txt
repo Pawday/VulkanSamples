@@ -76,3 +76,22 @@ if(USE_ADDR2LINE)
     )
 endif()
 
+list(APPEND HEADERS
+    basic.hpp
+    cpptrace.hpp
+    exceptions.hpp
+    formatting.hpp
+    forward.hpp
+    from_current.hpp
+    gdb_jit.hpp
+    io.hpp
+    utils.hpp
+)
+list(TRANSFORM HEADERS PREPEND "src/include/cpptrace/")
+
+target_sources(${PREF}cpptrace.headers INTERFACE
+    FILE_SET headers
+    TYPE HEADERS
+    BASE_DIRS "src/include"
+    FILES ${HEADERS}
+)
