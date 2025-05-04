@@ -61,6 +61,7 @@ add_library(${PREF}Common STATIC
 target_cxx23(${PREF}Common)
 target_strict_compilation(${PREF}Common)
 target_link_libraries(${PREF}Common PUBLIC
+    ${PREF}cpptrace
     ${PREF}vk_headers
     ${PREF}shaders
 )
