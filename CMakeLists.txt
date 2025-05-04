@@ -53,6 +53,24 @@ add_subdirectory(shaders)
 
 add_executable(${PREF}ICDLoadLeakTest ICDLoadLeakTest.c)
 
+
+add_library(${PREF}CPPTraceLauncher STATIC CPPTraceLauncher.cc)
+target_link_libraries(${PREF}CPPTraceLauncher PUBLIC ${PREF}cpptrace)
+
+add_library(${PREF}Launcher ALIAS ${PREF}CPPTraceLauncher)
+
+function(add_application TARGET_NAME)
+    add_library(${TARGET_NAME} STATIC ${ARGN})
+    set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME "${TARGET_NAME}_applib")
+    target_cxx23(${TARGET_NAME})
+    target_strict_compilation(${TARGET_NAME})
+
+    set(EXEC_TARGET_NAME "${TARGET_NAME}.exec")
+    add_executable(${EXEC_TARGET_NAME} $<TARGET_OBJECTS:${PREF}Launcher>)
+    set_target_properties(${EXEC_TARGET_NAME} PROPERTIES OUTPUT_NAME "${TARGET_NAME}")
+    target_link_libraries(${EXEC_TARGET_NAME} PRIVATE ${PREF}Launcher ${TARGET_NAME})
+endfunction()
+
 add_library(${PREF}Common STATIC
     Messenger.cc
     SimpleVulkanObjects.cc
@@ -61,7 +79,6 @@ add_library(${PREF}Common STATIC
 target_cxx23(${PREF}Common)
 target_strict_compilation(${PREF}Common)
 target_link_libraries(${PREF}Common PUBLIC
-    ${PREF}cpptrace
     ${PREF}vk_headers
     ${PREF}shaders
 )
@@ -76,9 +93,7 @@ target_precompile_headers(${PREF}Common
     "<vulkan/vulkan_to_string.hpp>"
 )
 
-add_executable(${PREF}OffscreenDraw OffscreenDraw.cc)
-target_cxx23(${PREF}OffscreenDraw)
-target_strict_compilation(${PREF}OffscreenDraw)
+add_application(${PREF}OffscreenDraw OffscreenDraw.cc)
 target_link_libraries(${PREF}OffscreenDraw PRIVATE ${PREF}Common)
 
 add_library(${PREF}WaylandContext STATIC)
@@ -91,18 +106,17 @@ target_link_libraries(${PREF}WaylandContext PUBLIC
     ${PREF}vk_headers
 )
 
-add_executable(${PREF}WaylandSurface WaylandSurface.cc)
-target_cxx23(${PREF}WaylandSurface)
-target_strict_compilation(${PREF}WaylandSurface)
+add_application(${PREF}WaylandSurface WaylandSurface.cc)
 target_link_libraries(${PREF}WaylandSurface PRIVATE
     ${PREF}Common
     ${PREF}WaylandContext
 )
 
-add_executable(${PREF}DMABuf DMABuf.cc)
-target_cxx23(${PREF}DMABuf)
-target_strict_compilation(${PREF}DMABuf)
+add_application(${PREF}DMABuf DMABuf.cc)
 target_link_libraries(${PREF}DMABuf PRIVATE
     ${PREF}Common
     ${PREF}WaylandContext
 )
+
+add_application(${PREF}LauncherTest TestApplication.cc)
+target_link_libraries(${PREF}LauncherTest PRIVATE ${PREF}CPPTraceLauncher)

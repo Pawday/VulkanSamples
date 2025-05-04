@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <cstdlib>
 #include <format>
 #include <functional>
 #include <iostream>
@@ -30,6 +31,8 @@
 #include "FormatTools.hh"
 #include "Messenger.hh"
 #include "SimpleVulkanObjects.hh"
+
+#include "Application.hh"
 
 constexpr size_t device_idx = 0;
 
@@ -287,21 +290,29 @@ const char *grayscale_pixel(uint8_t val)
 }
 } // namespace
 
-int main()
+int Application::main()
 {
-    vk::raii::Context ctx;
+    auto ctx_p = std::make_shared<vk::raii::Context>();
+    _defer_destruct.push_back(ctx_p);
+    vk::raii::Context &ctx = *ctx_p;
 
-    Messenger VKI_msgr{"VKI"};
+    auto VKI_msgr_p = std::make_shared<Messenger>("VKI");
+    _defer_destruct.push_back(VKI_msgr_p);
+    auto &VKI_msgr = *VKI_msgr_p;
     auto msgr_ci = SimpleVulkanObjects::make_verbose_messenger_ci(
         &VKI_msgr,
-        [](vk::DebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/,
+        [](vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
            vk::DebugUtilsMessageTypeFlagsEXT /*messageTypes*/,
            const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData,
            void *pUserData) -> vk::Bool32 {
             Messenger &m = *reinterpret_cast<Messenger *>(pUserData);
 
-            m.message(pCallbackData->pMessage);
+            if (messageSeverity == decltype(messageSeverity)::eError) {
+                std::string message = pCallbackData->pMessage;
+                throw std::runtime_error(std::move(message));
+            }
 
+            m.message(pCallbackData->pMessage);
             return false;
         });
 
@@ -335,6 +346,7 @@ int main()
 
         return std::make_shared<vk::raii::Instance>(ctx.createInstance(in_ci));
     }();
+    _defer_destruct.push_back(VKI);
 
     vk::raii::DebugUtilsMessengerEXT msgr = [&]() {
         return VKI->createDebugUtilsMessengerEXT(msgr_ci);
@@ -598,4 +610,6 @@ int main()
         print_fbm_ascii(3);
         break;
     }
+
+    return EXIT_SUCCESS;
 }

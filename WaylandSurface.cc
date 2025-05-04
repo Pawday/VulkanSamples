@@ -33,15 +33,22 @@
 #include "Messenger.hh"
 #include "SimpleVulkanObjects.hh"
 
+#include "Application.hh"
+
 constexpr size_t device_idx = 0;
 constexpr auto prefered_transparency_mod =
     vk::CompositeAlphaFlagBitsKHR::ePreMultiplied;
 
-int main()
-try {
-    vk::raii::Context ctx;
+int Application::main()
+{
+    auto ctx_p = std::make_shared<vk::raii::Context>();
+    _defer_destruct.push_back(ctx_p);
+    vk::raii::Context &ctx = *ctx_p;
 
-    Messenger VKI_msgr{"VKI"};
+    auto VKI_msgr_p = std::make_shared<Messenger>("VKI");
+    _defer_destruct.push_back(VKI_msgr_p);
+    auto &VKI_msgr = *VKI_msgr_p;
+
     auto msgr_ci = SimpleVulkanObjects::make_verbose_messenger_ci(
         &VKI_msgr,
         [](vk::DebugUtilsMessageSeverityFlagBitsEXT /*messageSeverity*/,
@@ -92,6 +99,7 @@ try {
 
         return std::make_shared<vk::raii::Instance>(ctx.createInstance(in_ci));
     }();
+    _defer_destruct.push_back(VKI);
 
     vk::raii::DebugUtilsMessengerEXT msgr = [&]() {
         return VKI->createDebugUtilsMessengerEXT(msgr_ci);
@@ -483,7 +491,5 @@ try {
         wl_ctx.update();
     }
 
-} catch (std::exception &e) {
-    std::cout << e.what() << '\n';
-    return EXIT_FAILURE;
+    return EXIT_SUCCESS;
 }

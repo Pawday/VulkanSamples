@@ -1,12 +1,11 @@
 #include <cstdlib>
-
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_raii.hpp>
+#include <stdexcept>
 
 #include "Application.hh"
 
 int Application::main()
 {
-    vk::raii::Context vk_ctx;
+    throw std::runtime_error("Hello error");
     return EXIT_SUCCESS;
 }
+
