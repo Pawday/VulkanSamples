@@ -1,4 +1,5 @@
 set(USE_DWARF 1)
+set(USE_LIBUNWIND 1)
 set(USE_ADDR2LINE 0)
 
 set(CPPTRACE_SOURCES_PREFIX "src/src")
@@ -53,8 +54,17 @@ list(APPEND CPPTRACE_RELATIVE_SOURCES
 list(TRANSFORM CPPTRACE_RELATIVE_SOURCES PREPEND "${CPPTRACE_SOURCES_PREFIX}/" OUTPUT_VARIABLE CPPTRACE_SOURCES)
 target_sources(${PREF}cpptrace.static PRIVATE ${CPPTRACE_SOURCES})
 
+if(USE_LIBUNWIND)
+    list(APPEND UNWIND_BACKEND_DEFINES
+        CPPTRACE_UNWIND_WITH_LIBUNWIND
+        UNW_LOCAL_ONLY
+    )
+else()
+    list(APPEND UNWIND_BACKEND_DEFINES CPPTRACE_UNWIND_WITH_UNWIND)
+endif()
+
 target_compile_definitions(${PREF}cpptrace.static PRIVATE
-    CPPTRACE_UNWIND_WITH_UNWIND
+    ${UNWIND_BACKEND_DEFINES}
     CPPTRACE_DEMANGLE_WITH_CXXABI
     CPPTRACE_GET_SYMBOLS_WITH_NOTHING
 )
@@ -65,6 +75,14 @@ if(USE_DWARF)
         PRIVATE
             ${PREF}libdwarf.headers
             ${PREF}libdwarf.static
+    )
+endif()
+
+if(USE_LIBUNWIND)
+    find_library(${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND unwind REQUIRED)
+    target_link_libraries(${PREF}cpptrace.static
+        PRIVATE
+        ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND}
     )
 endif()
 
