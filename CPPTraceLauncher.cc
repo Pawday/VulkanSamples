@@ -6,8 +6,6 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
-#include <stdexcept>
-#include <string.h>
 #include <string>
 #include <thread>
 #include <utility>
@@ -15,6 +13,8 @@
 
 #include <csignal>
 #include <cstdlib>
+#include <cstring>
+#include <string.h>
 
 #include <cpptrace/basic.hpp>
 #include <cpptrace/cpptrace.hpp>
@@ -23,6 +23,8 @@
 #include <cpptrace/from_current.hpp>
 
 #include "Application.hh"
+
+using namespace std::chrono_literals;
 
 static constexpr size_t signal_stacktrace_max_frames = 1024;
 
@@ -63,26 +65,34 @@ namespace {
     _exit(out);
 }
 
-std::atomic_bool got_signal = false;
-std::atomic<int> signal_value = 0;
-std::atomic<size_t> sigtrace_size = 0;
+[[noreturn]] void signal_watcher_trap()
+{
+    while (true) {
+        std::this_thread::sleep_for(1s);
+    }
+}
+
+std::atomic_flag got_signal = ATOMIC_FLAG_INIT;
+std::atomic_bool has_trace{false};
+int signal_value = 0;
+size_t sigtrace_size = 0;
 std::array<cpptrace::frame_ptr, signal_stacktrace_max_frames> sigtrace_buffer{};
 
 void launcher_fill_signal_stacktrace_and_trap(int signo)
 {
+    if (got_signal.test_and_set()) {
+        signal_watcher_trap();
+    }
     sigtrace_size = cpptrace::safe_generate_raw_trace(
         sigtrace_buffer.data(), sigtrace_buffer.size(), 0);
     signal_value = signo;
-    got_signal = true;
-    while (true) {
-        std::this_thread::yield();
-    }
+    has_trace = true;
+    signal_watcher_trap();
 }
 
 [[noreturn]] void signal_watcher_thread()
 {
-    while (!got_signal) {
-        using namespace std::chrono_literals;
+    while (!has_trace) {
         std::this_thread::sleep_for(1s);
     }
 
