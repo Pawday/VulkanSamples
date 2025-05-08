@@ -117,5 +117,5 @@ target_link_libraries(${PREF}DMABuf PRIVATE
     ${PREF}WaylandContext
 )
 
-add_application(${PREF}LauncherTest TestApplication.cc)
+add_application(${PREF}LauncherTest LauncherTest.cc)
 target_link_libraries(${PREF}LauncherTest PRIVATE ${PREF}CPPTraceLauncher)
