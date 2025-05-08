@@ -3,8 +3,7 @@ set(USE_LIBUNWIND 1)
 set(USE_ADDR2LINE 0)
 
 set(CPPTRACE_SOURCES_PREFIX "src/src")
-target_include_directories(${PREF}cpptrace.headers INTERFACE src/include)
-target_include_directories(${PREF}cpptrace.static PRIVATE ${CPPTRACE_SOURCES_PREFIX})
+target_include_directories(${PREF}cpptrace.static PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${CPPTRACE_SOURCES_PREFIX}>)
 target_link_libraries(${PREF}cpptrace.static PRIVATE ${PREF}cpptrace.headers)
 
 list(APPEND CPPTRACE_RELATIVE_SOURCES

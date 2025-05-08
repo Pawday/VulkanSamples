@@ -1,5 +1,3 @@
-target_include_directories(${PREF}vulkan.headers INTERFACE src/include)
-
 list(APPEND HEADERS
     vulkan_directfb.h
     vulkan_xlib.h
@@ -18,7 +16,6 @@ list(APPEND HEADERS
     vulkan.hpp
     vulkan_structs.hpp
     vulkan_shared.hpp
-    vulkan.cppm
     vulkan_format_traits.hpp
     vulkan_to_string.hpp
     vulkan_core.h
