@@ -48,19 +48,43 @@ if(USE_EXPORT)
     set(INSTALL_DEPS OFF)
 endif()
 
+
+set(EXPORT_NAME ${PREF}deps)
+set(EXPORT_VERSION "0.0.0")
+
 if(INSTALL_DEPS)
+
+    set(BUILD_TYPE_PREFIX "")
+    if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Release")
+        set(BUILD_TYPE_PREFIX "/${CMAKE_BUILD_TYPE}")
+    endif()
+
     foreach(S_TARGET ${STATIC_LIBS})
-        install(TARGETS ${PREF}${S_TARGET}.static EXPORT ${PREF}deps_export DESTINATION "${PREF}${S_TARGET}/lib")
+        install(TARGETS ${PREF}${S_TARGET}.static EXPORT ${EXPORT_NAME} DESTINATION "${EXPORT_NAME}-${EXPORT_VERSION}/${S_TARGET}${BUILD_TYPE_PREFIX}/lib")
     endforeach()
 
     foreach(H_TARGET ${HEADER_LIBS})
-        install(TARGETS ${PREF}${H_TARGET}.headers EXPORT ${PREF}deps_export FILE_SET headers DESTINATION "${PREF}${H_TARGET}/include")
+        install(TARGETS ${PREF}${H_TARGET}.headers EXPORT ${EXPORT_NAME} FILE_SET headers DESTINATION "${EXPORT_NAME}-${EXPORT_VERSION}/${H_TARGET}/include")
     endforeach()
 
-    install(EXPORT ${PREF}deps_export DESTINATION "cmake")
+    install(EXPORT ${EXPORT_NAME} DESTINATION "${EXPORT_NAME}-${EXPORT_VERSION}/cmake")
+
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file(Config.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_NAME}Config.cmake
+        INSTALL_DESTINATION cmake/${EXPORT_NAME}
+    )
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_NAME}ConfigVersion.cmake
+        VERSION ${EXPORT_VERSION}
+        COMPATIBILITY ExactVersion
+    )
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_NAME}Config.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/${EXPORT_NAME}ConfigVersion.cmake
+            DESTINATION ${EXPORT_NAME}-${EXPORT_VERSION}/cmake
+    )
 endif()
 
-set(EXPORT_NAME ${PREF}deps_export)
 if(NOT USE_EXPORT)
     export(EXPORT ${EXPORT_NAME} NAMESPACE exported_)
 else()
