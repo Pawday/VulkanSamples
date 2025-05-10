@@ -1,15 +1,16 @@
 #include <algorithm>
 #include <array>
-#include <exception>
 #include <format>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -64,33 +65,74 @@ int Application::main()
 
     std::shared_ptr<vk::raii::Instance> VKI = [&ctx, &VKI_msgr, &msgr_ci]() {
         vk::InstanceCreateInfo in_ci{};
-
-        do {
-            auto exts = ctx.enumerateInstanceExtensionProperties();
-            std::vector<std::string> exten_strings;
-            for (auto &ext : exts) {
-                exten_strings.push_back(ext.extensionName.data());
+        auto exts_avail = [&ctx]() {
+            std::unordered_set<std::string> output;
+            auto exts_arr = ctx.enumerateInstanceExtensionProperties();
+            for (auto &ext : exts_arr) {
+                output.emplace(ext.extensionName);
             }
+            return output;
+        }();
+        auto layers_avail = [&ctx] {
+            std::unordered_set<std::string> output;
+            auto layers_arr = ctx.enumerateInstanceLayerProperties();
+            for (auto &layer : layers_arr) {
+                output.emplace(layer.layerName);
+            }
+            return output;
+        }();
+
+        {
+            std::vector<std::string> exten_strings;
+            for (auto &ext : exts_avail) {
+                exten_strings.push_back(ext);
+            }
+            std::ranges::sort(exten_strings);
 
             format_table(
                 "Extentions", exten_strings, [&VKI_msgr](std::string_view msg) {
                     VKI_msgr.message(msg);
                 });
-
-        } while (false);
+        }
 
         in_ci.setPNext(&msgr_ci);
 
-        std::vector<const char *> VKI_exts;
-        VKI_exts.push_back("VK_EXT_debug_utils");
-
-        VKI_exts.push_back("VK_KHR_surface");
-        VKI_exts.push_back("VK_KHR_wayland_surface");
+        std::vector<const char *> exts;
+        auto add_ext = [&exts_avail, &exts](const char *ext_cstr) {
+            if (!exts_avail.contains(ext_cstr)) {
+                throw std::runtime_error(
+                    std::string{"Extension"} + " \"" + ext_cstr +
+                    "\" is not present");
+            }
+            exts.push_back(ext_cstr);
+        };
+        auto add_ext_if_avail = [&exts_avail,
+                                 &add_ext](const char *ext_cstr) -> bool {
+            if (!exts_avail.contains(ext_cstr)) {
+                std::cout << std::format(
+                    "[WARN] missing extension \"{}\"\n", ext_cstr);
+                return false;
+            }
+            add_ext(ext_cstr);
+            return true;
+        };
+        add_ext_if_avail("VK_EXT_debug_utils");
+        add_ext("VK_KHR_surface");
+        add_ext("VK_KHR_wayland_surface");
 
         std::vector<const char *> layers;
-        layers.push_back("VK_LAYER_KHRONOS_validation");
+        auto add_layer_if_avail = [&layers_avail,
+                                   &layers](const char *layer_cstr) {
+            if (!layers_avail.contains(layer_cstr)) {
+                std::cout << std::format(
+                    "[WARN] missing layer \"{}\"\n", layer_cstr);
+                return;
+            }
+            layers.push_back(layer_cstr);
+        };
+        add_layer_if_avail("VK_LAYER_KHRONOS_validation");
 
-        in_ci.setPEnabledExtensionNames(VKI_exts);
+        in_ci.setPEnabledExtensionNames(exts);
         in_ci.setPEnabledLayerNames(layers);
 
         vk::ApplicationInfo app_info{};
