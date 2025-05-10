@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <format>
 #include <iostream>
 #include <limits>
@@ -473,7 +474,23 @@ int Application::main()
 
     auto &main_q = Q_dev.g_qs.at(0);
 
+    size_t framerate = 0;
+
+    size_t last_frames = 0;
+    auto last_asc = std::chrono::high_resolution_clock::now();
+
     while (true) {
+        auto frame_start = std::chrono::high_resolution_clock::now();
+        last_frames++;
+
+        if (std::chrono::duration_cast<std::chrono::seconds>(
+                frame_start - last_asc)
+                .count() >= 1) {
+            last_asc = frame_start;
+            framerate = last_frames;
+            last_frames = 0;
+        }
+
         auto image_idx = swapchain.acquireNextImage(100, image_acuired_sem);
 
         if (image_idx.first == vk::Result::eTimeout) {
@@ -500,14 +517,19 @@ int Application::main()
 
         main_q.submit(submit_infos, draw_fence);
 
-        size_t wait_iterations = 0;
-
         auto fence_wait_status = vk::Result::eTimeout;
 
+        std::chrono::high_resolution_clock::duration iteration_timeout{};
+        size_t busyloop_iterations = 0;
         while (fence_wait_status == vk::Result::eTimeout) {
-            wait_iterations++;
+            busyloop_iterations++;
+            auto start = std::chrono::high_resolution_clock::now();
             fence_wait_status = D.waitForFences({draw_fence}, true, 0);
+            auto end = std::chrono::high_resolution_clock::now();
+            iteration_timeout += (end - start);
         }
+
+        size_t expected_framerate = std::chrono::seconds(1) / iteration_timeout;
 
         if (fence_wait_status != vk::Result::eSuccess) {
             std::cout << "Wait status error: "
@@ -516,7 +538,11 @@ int Application::main()
         }
         D.resetFences({draw_fence});
 
-        std::cout << "Draw taken " << wait_iterations << " cycles\n";
+        std::cout << framerate << " fps | "
+                  << "expected_fps=" << expected_framerate << " | "
+                  << busyloop_iterations << ' ' << "busyloop_iterations | "
+                  << "average_iteration_timeout="
+                  << iteration_timeout / busyloop_iterations << '\n';
 
         vk::PresentInfoKHR present_i{};
         std::array<uint32_t, 1> indexes{image_idx.second};
