@@ -44,11 +44,11 @@ constexpr auto prefered_transparency_mod =
 int Application::main()
 {
     auto ctx_p = std::make_shared<vk::raii::Context>();
-    _defer_destruct.push_back(ctx_p);
+    app_share_lifetime(ctx_p);
     vk::raii::Context &ctx = *ctx_p;
 
     auto VKI_msgr_p = std::make_shared<Messenger>("VKI");
-    _defer_destruct.push_back(VKI_msgr_p);
+    app_share_lifetime(VKI_msgr_p);
     auto &VKI_msgr = *VKI_msgr_p;
 
     auto msgr_ci = SimpleVulkanObjects::make_verbose_messenger_ci(
@@ -142,7 +142,7 @@ int Application::main()
 
         return std::make_shared<vk::raii::Instance>(ctx.createInstance(in_ci));
     }();
-    _defer_destruct.push_back(VKI);
+    app_share_lifetime(VKI);
 
     vk::raii::DebugUtilsMessengerEXT msgr = [&]() {
         return VKI->createDebugUtilsMessengerEXT(msgr_ci);

@@ -1,25 +1,37 @@
 #pragma once
 
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 struct Application
 {
-    Application(int i_argc, char *i_argv[], char *i_envp[])
-        : argc{i_argc}, argv{i_argv}, envp{i_envp}
-    {
-    }
+    int main();
+
+    template <typename... TS>
+    Application(TS &&...ts);
+
+    template <>
+    Application() = delete;
+
     Application(const Application &) = delete;
     Application(Application &&) = delete;
     Application &operator=(const Application &) = delete;
     Application &operator=(Application &&) = delete;
     ~Application();
 
-    int main();
+    struct MainArgs
+    {
+        std::vector<std::string> argv;
+        std::vector<std::string> env;
+    };
+    std::optional<MainArgs> get_main_args();
 
-    int argc;
-    char **argv;
-    char **envp;
+    void app_share_lifetime(std::shared_ptr<void> object);
 
-    std::vector<std::shared_ptr<void>> _defer_destruct;
+    struct ImplData
+    {
+        alignas(8) char _[128];
+    } _impl;
 };

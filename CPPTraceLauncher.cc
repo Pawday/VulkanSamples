@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
 #include <utility>
@@ -36,23 +37,81 @@ void print_trace(const cpptrace::raw_trace &trace)
 }
 }; // namespace
 
+namespace {
+
+struct CPPTraceApplication
+{
+    CPPTraceApplication(Application::MainArgs args) : _args(args)
+    {
+    }
+
+    Application::MainArgs args() const
+    {
+        return _args;
+    }
+
+    void app_share_lifetime(std::shared_ptr<void> object)
+    {
+        _shared_objects.emplace_back(std::move(object));
+    }
+
+    ~CPPTraceApplication()
+    {
+        destruct_shared();
+    }
+
+  private:
+    Application::MainArgs _args;
+    std::vector<std::shared_ptr<void>> _shared_objects;
+
+    void destruct_shared()
+    {
+        std::vector<std::shared_ptr<void>> defered = std::move(_shared_objects);
+        std::reverse(std::begin(defered), std::end(defered));
+
+        for (auto &obj : defered) {
+            size_t users = obj.use_count();
+            auto addr = obj.get();
+            if (users > 1) {
+                std::cout << "Defered obj at " << addr << " still has "
+                          << std::to_string(users - 1) << "users" << '\n';
+                continue;
+            }
+
+            std::shared_ptr<void> null{obj};
+            obj.reset();
+        }
+    }
+};
+
+static_assert(sizeof(Application::ImplData) >= sizeof(CPPTraceApplication));
+static_assert(alignof(Application::ImplData) >= alignof(CPPTraceApplication));
+CPPTraceApplication &cast(Application::ImplData &d)
+{
+    return *reinterpret_cast<CPPTraceApplication *>(d._);
+}
+
+} // namespace
+
+template <>
+Application::Application(CPPTraceApplication &&impl)
+{
+    new (_impl._) CPPTraceApplication{std::move(impl)};
+}
+
 Application::~Application()
 {
-    std::vector<std::shared_ptr<void>> defered = std::move(_defer_destruct);
-    std::reverse(std::begin(defered), std::end(defered));
+    cast(_impl).~CPPTraceApplication();
+}
 
-    for (auto &obj : defered) {
-        size_t users = obj.use_count();
-        auto addr = obj.get();
-        if (users > 1) {
-            std::cout << "Defered obj at " << addr << " still has "
-                      << std::to_string(users - 1) << "userts" << '\n';
-            continue;
-        }
+std::optional<Application::MainArgs> Application::get_main_args()
+{
+    return cast(_impl).args();
+}
 
-        std::shared_ptr<void> null{obj};
-        obj.reset();
-    }
+void Application::app_share_lifetime(std::shared_ptr<void> object)
+{
+    cast(_impl).app_share_lifetime(object);
 }
 
 #include <signal.h>
@@ -128,7 +187,16 @@ int main(int argc, char *argv[], char *envp[]) CPPTRACE_TRY
         return EXIT_FAILURE;
     }
 
-    Application app{argc, argv, envp};
+    Application::MainArgs args;
+    for (size_t argidx = 0; argidx != argc; ++argidx) {
+        args.argv.push_back(argv[argidx]);
+    }
+    while (*envp != nullptr) {
+        args.env.push_back(*envp);
+        envp++;
+    }
+
+    Application app{CPPTraceApplication{args}};
 
     CPPTRACE_TRY
     {
