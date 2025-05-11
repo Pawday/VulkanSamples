@@ -115,6 +115,7 @@ bool setup_signals_trace()
     status = status && sigaction(SIGSEGV, &sa, NULL) == 0;
     status = status && sigaction(SIGABRT, &sa, NULL) == 0;
     status = status && sigaction(SIGBUS, &sa, NULL) == 0;
+    status = status && sigaction(SIGILL, &sa, NULL) == 0;
     return status;
 }
 
