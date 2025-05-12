@@ -30,6 +30,8 @@ struct Application
 
     void app_share_lifetime(std::shared_ptr<void> object);
 
+    bool terminate_requested() const;
+
     struct ImplData
     {
         alignas(8) char _[128];

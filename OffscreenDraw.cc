@@ -564,7 +564,7 @@ int Application::main()
 
     std::vector<vk::CommandBuffer> bufs;
 
-    while (true) {
+    while (!terminate_requested()) {
         vk::Result wait_status = vk::Result::eTimeout;
         uint64_t fence_wait_counter = 0;
 

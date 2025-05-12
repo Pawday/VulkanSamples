@@ -479,7 +479,7 @@ int Application::main()
     size_t last_frames = 0;
     auto last_asc = std::chrono::high_resolution_clock::now();
 
-    while (true) {
+    while (!terminate_requested()) {
         auto frame_start = std::chrono::high_resolution_clock::now();
         last_frames++;
 

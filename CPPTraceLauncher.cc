@@ -91,6 +91,11 @@ CPPTraceApplication &cast(Application::ImplData &d)
     return *reinterpret_cast<CPPTraceApplication *>(d._);
 }
 
+const CPPTraceApplication &cast(const Application::ImplData &d)
+{
+    return *reinterpret_cast<const CPPTraceApplication *>(d._);
+}
+
 } // namespace
 
 template <>
@@ -178,7 +183,29 @@ bool setup_signals_trace()
     return status;
 }
 
+std::atomic_flag terminate_requested_flag = ATOMIC_FLAG_INIT;
+bool setup_terminate_signals()
+{
+    struct sigaction sa{};
+    sa.sa_handler = [](int) { terminate_requested_flag.test_and_set(); };
+    bool status = true;
+    status = status && sigaction(SIGTERM, &sa, NULL) == 0;
+    status = status && sigaction(SIGINT, &sa, NULL) == 0;
+    return status;
+}
+
 } // namespace
+
+bool Application::terminate_requested() const
+{
+    return terminate_requested_flag.test();
+}
+
+struct Hog
+{
+    char a[102400];
+    std::shared_ptr<Hog> o;
+};
 
 int main(int argc, char *argv[], char *envp[]) CPPTRACE_TRY
 {
@@ -187,16 +214,24 @@ int main(int argc, char *argv[], char *envp[]) CPPTRACE_TRY
         return EXIT_FAILURE;
     }
 
-    Application::MainArgs args;
-    for (size_t argidx = 0; argidx != argc; ++argidx) {
-        args.argv.push_back(argv[argidx]);
-    }
-    while (*envp != nullptr) {
-        args.env.push_back(*envp);
-        envp++;
+    if (!setup_terminate_signals()) {
+        std::cerr << "Cannot set terminate handlers\n";
+        return EXIT_FAILURE;
     }
 
-    Application app{CPPTraceApplication{args}};
+    auto create_args = [&]() -> Application::MainArgs {
+        Application::MainArgs args{};
+        for (size_t argidx = 0; argidx != argc; ++argidx) {
+            args.argv.push_back(argv[argidx]);
+        }
+        while (*envp != nullptr) {
+            args.env.push_back(*envp);
+            envp++;
+        }
+        return args;
+    };
+
+    Application app{CPPTraceApplication{create_args()}};
 
     CPPTRACE_TRY
     {
