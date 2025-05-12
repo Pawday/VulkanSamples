@@ -305,7 +305,7 @@ int Application::main()
 
         vk::SwapchainCreateInfoKHR swapchain_ci{};
         swapchain_ci.surface = surface;
-        swapchain_ci.minImageCount = std::max(capabilities.maxImageCount, 1u);
+        swapchain_ci.minImageCount = std::max(capabilities.minImageCount, 1u);
         swapchain_ci.imageFormat = surface_format.format;
         swapchain_ci.imageColorSpace = surface_format.colorSpace;
         swapchain_ci.imageExtent = swapchain_resolution;
