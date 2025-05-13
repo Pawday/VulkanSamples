@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan_raii.hpp>
+#include "Data.hh"
 
 namespace Wayland {
 
@@ -13,11 +13,13 @@ struct Window
     Window(const Window &) = delete;
     Window &operator=(const Window &) = delete;
 
+    using ImplT = Data<128, 16>;
+
   private:
     friend struct Context;
     friend struct VulkanWindow;
     Window();
-    alignas(16) char _[128];
+    ImplT impl;
 };
 
 } // namespace Wayland

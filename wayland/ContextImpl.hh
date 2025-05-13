@@ -10,6 +10,7 @@
 
 #include "ContextHandles.hh"
 #include "RegistryListener.hh"
+#include "Wayland/Context.hh"
 
 namespace Wayland {
 namespace Impl {
@@ -24,7 +25,7 @@ struct Context
 
     void update()
     {
-        wl_display_dispatch(_h.display);
+        wl_display_dispatch_pending(_h.display);
     }
 
     ContextHandles _h;
@@ -55,10 +56,9 @@ struct ContextShared
 };
 
 namespace {
-template <size_t S>
-ContextShared &cast_context(char (&data)[S])
+inline ContextShared &cast_context(Wayland::Context::ImplT &impl)
 {
-    return *reinterpret_cast<ContextShared *>(data);
+    return *reinterpret_cast<ContextShared *>(impl());
 }
 
 } // namespace

@@ -88,28 +88,28 @@ Context::Context()
 {
     static_assert(alignof(Context) >= alignof(Impl::ContextShared));
     static_assert(sizeof(Context) >= sizeof(Impl::ContextShared));
-    new (_) Impl::ContextShared;
+    new (impl()) Impl::ContextShared;
 }
 
 Context::Context(Context &&o)
 {
-    new (_) Impl::ContextShared{std::move(Impl::cast_context(o._))};
+    new (impl()) Impl::ContextShared{std::move(Impl::cast_context(o.impl))};
 }
 
 Context &Context::operator=(Context &&o)
 {
-    Impl::cast_context(_).operator=(std::move(Impl::cast_context(o._)));
+    Impl::cast_context(impl).operator=(std::move(Impl::cast_context(o.impl)));
     return *this;
 }
 
 Context::~Context()
 {
-    Impl::cast_context(_).~ContextShared();
+    Impl::cast_context(impl).~ContextShared();
 }
 
 Window Context::create_window()
 {
-    Impl::ContextShared &ctx = Impl::cast_context(_);
+    Impl::ContextShared &ctx = Impl::cast_context(impl);
 
     Impl::Window win{
         ctx, ctx->_registry.compositor(), ctx->_registry.xdg_base()};
@@ -117,13 +117,13 @@ Window Context::create_window()
     Window output{};
     static_assert(sizeof(Window) >= sizeof(Impl::Window));
     static_assert(alignof(Window) >= alignof(Impl::Window));
-    new (output._) Impl::Window(std::move(win));
+    new (impl()) Impl::Window(std::move(win));
     return output;
 }
 
 void Context::update()
 {
-    Impl::cast_context(_)->update();
+    Impl::cast_context(impl)->update();
 };
 
 } // namespace Wayland

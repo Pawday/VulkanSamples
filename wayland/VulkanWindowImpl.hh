@@ -31,12 +31,11 @@ struct VulkanWindow
 };
 
 namespace {
-template <size_t S>
-VulkanWindow &cast_vulkan_window(char (&data)[S])
+inline VulkanWindow &cast_vulkan_window(Wayland::VulkanWindow::ImplT &impl)
 {
-    return *reinterpret_cast<VulkanWindow *>(data);
-}
+    return *reinterpret_cast<VulkanWindow *>(impl());
 } // namespace
 
+} // namespace
 } // namespace Impl
 } // namespace Wayland

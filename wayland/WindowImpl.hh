@@ -10,6 +10,7 @@
 #include <xdg-shell.h>
 
 #include "ContextImpl.hh"
+#include "Wayland/Window.hh"
 #include "WindowHandles.hh"
 
 namespace Wayland {
@@ -38,10 +39,9 @@ struct Window
 };
 
 namespace {
-template <size_t S>
-Window &cast_window(char (&data)[S])
+inline Window &cast_window(Wayland::Window::ImplT &impl)
 {
-    return *reinterpret_cast<Window *>(data);
+    return *reinterpret_cast<Window *>(impl());
 }
 } // namespace
 

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+
+#include "Data.hh"
 #include "Window.hh"
 
 namespace Wayland {
@@ -19,8 +22,10 @@ struct Context
     Context(const Context &) = delete;
     Context &operator=(const Context &) = delete;
 
+    using ImplT = Data<8>;
+
   private:
-    alignas(8) char _[16];
+    ImplT impl;
 };
 
 } // namespace Wayland

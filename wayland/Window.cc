@@ -74,19 +74,19 @@ Window::Window() = default;
 
 Window::Window(Window &&o)
 {
-    static_assert(alignof(Window) >= alignof(Impl::Window));
-    static_assert(sizeof(Window) >= sizeof(Impl::Window));
-    new (_) Impl::Window{std::move(Impl::cast_window(o._))};
+    static_assert(alignof(Window::ImplT) >= alignof(Impl::Window));
+    static_assert(sizeof(Window::ImplT) >= sizeof(Impl::Window));
+    new (impl()) Impl::Window{std::move(Impl::cast_window(o.impl))};
 };
 
 Window &Window::operator=(Window &&o)
 {
-    Impl::cast_window(_).operator=(std::move(Impl::cast_window(o._)));
+    Impl::cast_window(impl).operator=(std::move(Impl::cast_window(o.impl)));
     return *this;
 }
 
 Window::~Window()
 {
-    Impl::cast_window(_).~Window();
+    Impl::cast_window(impl).~Window();
 }
 } // namespace Wayland

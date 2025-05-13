@@ -76,32 +76,33 @@ VulkanWindow::VulkanWindow(Impl::Window &w, SharedInstance instance)
 
 VulkanWindow::VulkanWindow(Wayland::Window &w, SharedInstance instance)
 {
-    Impl::Window &impl_w = Impl::cast_window(w._);
-    static_assert(alignof(VulkanWindow) >= alignof(Impl::VulkanWindow));
-    static_assert(sizeof(VulkanWindow) >= sizeof(Impl::VulkanWindow));
-    new (_) Impl::VulkanWindow{impl_w, instance};
+    Impl::Window &impl_w = Impl::cast_window(w.impl);
+    static_assert(alignof(VulkanWindow::ImplT) >= alignof(Impl::VulkanWindow));
+    static_assert(sizeof(VulkanWindow::ImplT) >= sizeof(Impl::VulkanWindow));
+    new (impl()) Impl::VulkanWindow{impl_w, instance};
 }
 
 VulkanWindow::VulkanWindow(VulkanWindow &&o)
 {
-    new (_) Impl::VulkanWindow{std::move(Impl::cast_vulkan_window(o._))};
+    new (impl())
+        Impl::VulkanWindow{std::move(Impl::cast_vulkan_window(o.impl))};
 }
 
 VulkanWindow &VulkanWindow::operator=(VulkanWindow &&o)
 {
-    Impl::cast_vulkan_window(_).operator=(
-        std::move(Impl::cast_vulkan_window(o._)));
+    Impl::cast_vulkan_window(impl).operator=(
+        std::move(Impl::cast_vulkan_window(o.impl)));
     return *this;
 }
 
 VulkanWindow::~VulkanWindow()
 {
-    Impl::cast_vulkan_window(_).~VulkanWindow();
+    Impl::cast_vulkan_window(impl).~VulkanWindow();
 }
 
 vk::raii::SurfaceKHR &VulkanWindow::surface()
 {
-    return Impl::cast_vulkan_window(_).surface();
+    return Impl::cast_vulkan_window(impl).surface();
 }
 
 } // namespace Wayland

@@ -4,6 +4,7 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
+#include "Data.hh"
 #include "Window.hh"
 
 namespace Wayland {
@@ -21,8 +22,10 @@ struct VulkanWindow
 
     vk::raii::SurfaceKHR &surface();
 
+    using ImplT = Data<256, 16>;
+
   private:
-    alignas(16) char _[256];
+    ImplT impl;
 };
 
 } // namespace Wayland
