@@ -481,7 +481,6 @@ int Application::main()
 
     while (!terminate_requested()) {
         auto frame_start = std::chrono::high_resolution_clock::now();
-        last_frames++;
 
         if (std::chrono::duration_cast<std::chrono::seconds>(
                 frame_start - last_asc)
@@ -497,6 +496,7 @@ int Application::main()
             std::this_thread::yield();
             continue;
         }
+        last_frames++;
 
         if (image_idx.first != vk::Result::eSuccess) {
             std::cout << "Breaking loop: acquireNextImage() == "
