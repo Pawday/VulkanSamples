@@ -1,47 +1,20 @@
 cmake_minimum_required(VERSION 3.23)
 
-set(LINK_LIBRARIES_ONLY_TARGETS ON)
-
 project(vkSamples)
 set(PREF "${CMAKE_PROJECT_NAME}_")
 
 option(${PREF}WAYLAND_DYNAMIC "Find wayland-client library at runtime (dlopen)" OFF)
 
-include(host_tool.cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(add_host_tool)
+include(add_system_library)
+include(target_cxx23)
+include(target_strict_compilation)
 
 add_host_tool(glslang HAS_GLSLAND)
 if(NOT ${HAS_GLSLAND})
     message(FATAL_ERROR "No glslang")
 endif()
-
-function(target_cxx23 tgt)
-    set_property(TARGET ${tgt} PROPERTY CXX_STANDARD 23)
-    set_property(TARGET ${tgt} PROPERTY CXX_STANDARD_REQUIRED ON)
-    set_property(TARGET ${tgt} PROPERTY CXX_EXTENSIONS ON)
-endfunction()
-
-function(target_strict_compilation TARGET)
-    set(WSHADOW_WARN_OPT "-Wshadow")
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        set(WSHADOW_WARN_OPT "-Wshadow-all")
-    endif()
-
-    target_compile_options(${TARGET} PRIVATE
-        "-Wall"
-        "-Wextra"
-        "-pedantic-errors"
-        ${WSHADOW_WARN_OPT}
-        "-Werror"
-    )
-
-    set_property(TARGET ${TARGET} PROPERTY LINK_LIBRARIES_ONLY_TARGETS ON)
-endfunction()
-
-function(add_system_library LIBRARY_NAME)
-    find_library(${PREF}SYSLIB_${LIBRARY_NAME} ${LIBRARY_NAME} REQUIRED)
-    add_library(${PREF}syslib.${LIBRARY_NAME} INTERFACE)
-    target_link_libraries(${PREF}syslib.${LIBRARY_NAME} INTERFACE ${${PREF}SYSLIB_${LIBRARY_NAME}})
-endfunction()
 
 if(NOT ${${PREF}WAYLAND_DYNAMIC})
     add_system_library(wayland-client)

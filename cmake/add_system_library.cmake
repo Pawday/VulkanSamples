@@ -1,0 +1,5 @@
+function(add_system_library LIBRARY_NAME)
+    find_library(${PREF}SYSLIB_${LIBRARY_NAME} ${LIBRARY_NAME} REQUIRED)
+    add_library(${PREF}syslib.${LIBRARY_NAME} INTERFACE)
+    target_link_libraries(${PREF}syslib.${LIBRARY_NAME} INTERFACE ${${PREF}SYSLIB_${LIBRARY_NAME}})
+endfunction()
