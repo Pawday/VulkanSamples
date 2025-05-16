@@ -3,6 +3,7 @@ set(USE_EXPORT OFF)
 list(APPEND STATIC_LIBS
     libdwarf
     cpptrace
+    expat
 )
 
 list(APPEND HEADER_LIBS
@@ -27,8 +28,9 @@ if(NOT USE_EXPORT)
 
     add_subdirectory(Vulkan-Headers)
     add_subdirectory(Wayland)
-    add_subdirectory(libdwarf)
     add_subdirectory(cpptrace)
+    add_subdirectory(expat)
+    add_subdirectory(libdwarf)
 endif()
 
 list(APPEND ALL_DEPS_TARGETS)
