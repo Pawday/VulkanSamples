@@ -1,3 +1,8 @@
 target_include_directories(${PREF}WaylandContext PUBLIC include)
 
-add_subdirectory(direct_linking)
+
+if(${${PREF}WAYLAND_DYNAMIC})
+    add_subdirectory(dynamic_linking)
+else()
+    add_subdirectory(direct_linking)
+endif()

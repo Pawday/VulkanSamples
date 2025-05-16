@@ -5,6 +5,8 @@ set(LINK_LIBRARIES_ONLY_TARGETS ON)
 project(vkSamples)
 set(PREF "${CMAKE_PROJECT_NAME}_")
 
+option(${PREF}WAYLAND_DYNAMIC "Find wayland-client library at runtime (dlopen)" OFF)
+
 include(host_tool.cmake)
 
 add_host_tool(glslang HAS_GLSLAND)
@@ -41,7 +43,9 @@ function(add_system_library LIBRARY_NAME)
     target_link_libraries(${PREF}syslib.${LIBRARY_NAME} INTERFACE ${${PREF}SYSLIB_${LIBRARY_NAME}})
 endfunction()
 
-add_system_library(wayland-client)
+if(NOT ${${PREF}WAYLAND_DYNAMIC})
+    add_system_library(wayland-client)
+endif()
 
 add_subdirectory(deps)
 add_subdirectory(shaders)
@@ -92,10 +96,12 @@ add_application(${PREF}OffscreenDraw OffscreenDraw.cc)
 target_link_libraries(${PREF}OffscreenDraw PRIVATE ${PREF}Common)
 
 add_library(${PREF}WaylandContext STATIC)
+if(NOT ${${PREF}WAYLAND_DYNAMIC})
+    target_link_libraries(${PREF}WaylandContext PRIVATE ${PREF}syslib.wayland-client)
+endif()
 add_subdirectory(wayland)
 target_cxx23(${PREF}WaylandContext)
 target_strict_compilation(${PREF}WaylandContext)
-target_link_libraries(${PREF}WaylandContext PRIVATE ${PREF}syslib.wayland-client)
 target_link_libraries(${PREF}WaylandContext PUBLIC
     ${PREF}wayland_client.headers
     ${PREF}vulkan.headers
