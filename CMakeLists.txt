@@ -5,6 +5,8 @@ set(PREF "${CMAKE_PROJECT_NAME}_")
 
 option(${PREF}WAYLAND_DYNAMIC "Find wayland-client library at runtime (dlopen)" OFF)
 
+add_subdirectory(deps EXCLUDE_FROM_ALL)
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(add_host_tool)
 include(add_system_library)
@@ -20,18 +22,19 @@ if(NOT ${${PREF}WAYLAND_DYNAMIC})
     add_system_library(wayland-client)
 endif()
 
-add_subdirectory(deps)
 add_subdirectory(shaders)
 
 add_executable(${PREF}ICDLoadLeakTest ICDLoadLeakTest.c)
 
-
-add_library(${PREF}CPPTraceLauncher STATIC CPPTraceLauncher.cc)
-target_link_libraries(${PREF}CPPTraceLauncher PUBLIC ${PREF}cpptrace.headers)
-
-add_library(${PREF}Launcher ALIAS ${PREF}CPPTraceLauncher)
-
 function(add_application TARGET_NAME)
+    if(NOT TARGET ${PREF}CPPTraceLauncher)
+        add_library(${PREF}CPPTraceLauncher STATIC CPPTraceLauncher.cc)
+        target_link_libraries(${PREF}CPPTraceLauncher PRIVATE ${PREF}cpptrace.headers ${PREF}cpptrace.static)
+    endif()
+    if(NOT TARGET ${PREF}Launcher)
+        add_library(${PREF}Launcher ALIAS ${PREF}CPPTraceLauncher)
+    endif()
+
     add_library(${TARGET_NAME} STATIC ${ARGN})
     set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME "${TARGET_NAME}_applib")
     target_cxx23(${TARGET_NAME})
@@ -40,14 +43,13 @@ function(add_application TARGET_NAME)
     set(EXEC_TARGET_NAME "${TARGET_NAME}.exec")
     add_executable(${EXEC_TARGET_NAME} $<TARGET_OBJECTS:${PREF}Launcher>)
     set_target_properties(${EXEC_TARGET_NAME} PROPERTIES OUTPUT_NAME "${TARGET_NAME}")
-    target_link_libraries(${EXEC_TARGET_NAME} PRIVATE ${PREF}cpptrace.static ${PREF}Launcher ${TARGET_NAME})
+    target_link_libraries(${EXEC_TARGET_NAME} PRIVATE ${PREF}Launcher ${TARGET_NAME})
 endfunction()
 
 add_library(${PREF}Common STATIC
     Messenger.cc
     SimpleVulkanObjects.cc
 )
-
 target_cxx23(${PREF}Common)
 target_strict_compilation(${PREF}Common)
 target_link_libraries(${PREF}Common PUBLIC
