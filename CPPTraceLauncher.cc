@@ -198,14 +198,12 @@ bool setup_terminate_signals()
 
 bool Application::terminate_requested() const
 {
-    return terminate_requested_flag.test();
+    bool out = terminate_requested_flag.test_and_set();
+    if(!out) {
+        terminate_requested_flag.clear();
+    }
+    return out;
 }
-
-struct Hog
-{
-    char a[102400];
-    std::shared_ptr<Hog> o;
-};
 
 int main(int argc, char *argv[], char *envp[]) CPPTRACE_TRY
 {

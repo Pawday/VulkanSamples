@@ -12,9 +12,6 @@ struct Application
     template <typename... TS>
     Application(TS &&...ts);
 
-    template <>
-    Application() = delete;
-
     Application(const Application &) = delete;
     Application(Application &&) = delete;
     Application &operator=(const Application &) = delete;
