@@ -72,13 +72,15 @@ target_link_libraries(${PREF}OffscreenDraw PRIVATE ${PREF}Common)
 
 add_library(${PREF}WaylandContext STATIC)
 if(NOT ${${PREF}WAYLAND_DYNAMIC})
-    target_link_libraries(${PREF}WaylandContext PRIVATE ${PREF}syslib.wayland-client)
+    target_link_libraries(${PREF}WaylandContext PRIVATE
+        ${PREF}syslib.wayland-client
+        ${PREF}wayland_client.headers
+    )
 endif()
 add_subdirectory(wayland)
 target_cxx23(${PREF}WaylandContext)
 target_strict_compilation(${PREF}WaylandContext)
 target_link_libraries(${PREF}WaylandContext PUBLIC
-    ${PREF}wayland_client.headers
     ${PREF}vulkan.headers
 )
 
