@@ -1,1 +1,1 @@
-include(${CMAKE_CURRENT_LIST_DIR}/@EXPORT_NAME@.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/@DEPS_EXPORT_NAME@.cmake)
