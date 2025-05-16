@@ -3,7 +3,13 @@ cmake_minimum_required(VERSION 3.23)
 project(vkSamples)
 set(PREF "${CMAKE_PROJECT_NAME}_")
 
+option(${PREF}INSTALL_DEPS_ONLY "Only build and install deps as cmake package" OFF)
 option(${PREF}WAYLAND_DYNAMIC "Find wayland-client library at runtime (dlopen)" OFF)
+
+if(${PREF}INSTALL_DEPS_ONLY)
+    add_subdirectory(deps)
+    return()
+endif()
 
 add_subdirectory(deps EXCLUDE_FROM_ALL)
 
