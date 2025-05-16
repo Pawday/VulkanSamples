@@ -117,7 +117,7 @@ Window Context::create_window()
     Window output{};
     static_assert(sizeof(Window) >= sizeof(Impl::Window));
     static_assert(alignof(Window) >= alignof(Impl::Window));
-    new (impl()) Impl::Window(std::move(win));
+    new (output.impl()) Impl::Window(std::move(win));
     return output;
 }
 
