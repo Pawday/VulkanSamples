@@ -199,7 +199,7 @@ bool setup_terminate_signals()
 bool Application::terminate_requested() const
 {
     bool out = terminate_requested_flag.test_and_set();
-    if(!out) {
+    if (!out) {
         terminate_requested_flag.clear();
     }
     return out;
