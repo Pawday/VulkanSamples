@@ -248,6 +248,6 @@ int main(int argc, char *argv[], char *envp[]) CPPTRACE_TRY
 CPPTRACE_CATCH(...)
 {
     print_trace(cpptrace::raw_trace_from_current_exception());
-    return EXIT_FAILURE;
+    throw;
 }
 
