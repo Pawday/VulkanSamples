@@ -41,11 +41,11 @@ namespace {
 
 struct CPPTraceApplication
 {
-    CPPTraceApplication(Application::MainArgs args) : _args(args)
+    CPPTraceApplication(Application::LibcArgs args) : _args(args)
     {
     }
 
-    Application::MainArgs args() const
+    Application::LibcArgs args() const
     {
         return _args;
     }
@@ -61,7 +61,7 @@ struct CPPTraceApplication
     }
 
   private:
-    Application::MainArgs _args;
+    Application::LibcArgs _args;
     std::vector<std::shared_ptr<void>> _shared_objects;
 
     void destruct_shared()
@@ -109,7 +109,7 @@ Application::~Application()
     cast(_impl).~CPPTraceApplication();
 }
 
-std::optional<Application::MainArgs> Application::get_main_args()
+std::optional<Application::LibcArgs> Application::get_libc_args()
 {
     return cast(_impl).args();
 }
@@ -217,8 +217,8 @@ int main(int argc, char *argv[], char *envp[]) CPPTRACE_TRY
         return EXIT_FAILURE;
     }
 
-    auto create_args = [&]() -> Application::MainArgs {
-        Application::MainArgs args{};
+    auto create_args = [&]() -> Application::LibcArgs {
+        Application::LibcArgs args{};
         for (size_t argidx = 0; argidx != argc; ++argidx) {
             args.argv.push_back(argv[argidx]);
         }

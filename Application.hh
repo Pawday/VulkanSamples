@@ -18,12 +18,12 @@ struct Application
     Application &operator=(Application &&) = delete;
     ~Application();
 
-    struct MainArgs
+    struct LibcArgs
     {
         std::vector<std::string> argv;
         std::vector<std::string> env;
     };
-    std::optional<MainArgs> get_main_args();
+    std::optional<LibcArgs> get_libc_args();
 
     void app_share_lifetime(std::shared_ptr<void> object);
 
