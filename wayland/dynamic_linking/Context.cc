@@ -1,34 +1,51 @@
+#include <memory>
 #include <stdexcept>
-#include <string>
 #include <utility>
 
 #include <cstring>
 
 #include <Wayland/Context.hh>
 
+#include "ClientCoreLibrary.hh"
+
 namespace Wayland {
+
+namespace {
+
+struct Impl
+{
+    std::unique_ptr<ClientCoreLibrary> lib =
+        std::make_unique<ClientCoreLibrary>();
+};
+
+Impl &cast(Context::ImplT &impl)
+{
+    return *reinterpret_cast<Impl *>(impl());
+}
+
+}; // namespace
 
 Context::Context()
 {
-    std::string message =
-        "Not implemented and impl with size=" + std::to_string(sizeof(impl)) +
-        " is ignored";
-    throw std::runtime_error(std::move(message));
+    static_assert(sizeof(Context::ImplT) >= sizeof(Impl));
+    static_assert(alignof(Context::ImplT) >= alignof(Impl));
+    new (impl()) Impl;
 }
 
-Context::Context(Context &&)
+Context::Context(Context &&o)
 {
-    throw std::runtime_error("Not implemented");
+    new (impl()) Impl{std::move(cast(o.impl))};
 }
 
-Context &Context::operator=(Context &&)
+Context &Context::operator=(Context &&o)
 {
-    throw std::runtime_error("Not implemented");
+    cast(impl).operator=(std::move(cast(o.impl)));
     return *this;
 }
 
 Context::~Context()
 {
+    cast(impl).~Impl();
 }
 
 Window Context::create_window()
