@@ -5,6 +5,8 @@ set(PREF "${CMAKE_PROJECT_NAME}_")
 
 option(${PREF}INSTALL_DEPS_ONLY "Only build and install deps as cmake package" OFF)
 option(${PREF}USE_PACKAGED_DEPS "Use find_package for deps produced by INSTALL_DEPS_ONLY" OFF)
+option(${PREF}INSTALL_HOST_APPS_ONLY "Only build and install host apps as cmake package" OFF)
+option(${PREF}USE_PACKAGED_HOST_APPS "Use find_package for host apps produced by INSTALL_HOST_APPS_ONLY" OFF)
 
 option(${PREF}WAYLAND_DYNAMIC "Find wayland-client library at runtime (dlopen)" OFF)
 
@@ -45,6 +47,33 @@ function(add_application TARGET_NAME)
     set_target_properties(${EXEC_TARGET_NAME} PROPERTIES OUTPUT_NAME "${TARGET_NAME}")
     target_link_libraries(${EXEC_TARGET_NAME} PRIVATE ${PREF}Launcher ${TARGET_NAME})
 endfunction()
+
+function(install_application TARGET_NAME)
+    set(EXEC_TARGET_NAME "${TARGET_NAME}.exec")
+    install(TARGETS ${EXEC_TARGET_NAME} ${ARGN})
+endfunction()
+
+
+list(APPEND HOST_APPLICATIONS
+    TestHostApplication
+)
+
+foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
+    set(TGT "${PREF}host_${HOST_APPLICATION}")
+    add_application(${TGT})
+endforeach()
+
+set(HOST_APPS_EXPORT_NAME "${PREF}host_apps")
+if(${PREF}INSTALL_HOST_APPS_ONLY)
+    add_subdirectory(host_apps)
+    return()
+endif()
+
+if(${PREF}USE_PACKAGED_HOST_APPS)
+    find_package(${HOST_APPS_EXPORT_NAME} REQUIRED)
+else()
+    add_subdirectory(host_apps)
+endif()
 
 add_host_tool(glslang HAS_GLSLAND)
 if(NOT ${HAS_GLSLAND})
