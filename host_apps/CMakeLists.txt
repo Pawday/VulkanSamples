@@ -1,7 +1,7 @@
 set(EXPORT_VERSION "0.0.0")
 
 
-target_sources(${PREF}host_TestHostApplication PRIVATE TestHostApplication.cc)
+application_sources(${PREF}host_TestHostApplication PRIVATE TestHostApplication.cc)
 
 
 
@@ -18,7 +18,7 @@ write_basic_package_version_file(
 
 foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
     set(TGT "${PREF}host_${HOST_APPLICATION}")
-    install_application(${TGT} EXPORT ${HOST_APPS_EXPORT_NAME} DESTINATION "${HOST_APPS_EXPORT_NAME}-${EXPORT_VERSION}/bin/")
+    install(TARGETS ${TGT} EXPORT ${HOST_APPS_EXPORT_NAME} DESTINATION "${HOST_APPS_EXPORT_NAME}-${EXPORT_VERSION}/bin/")
 endforeach()
 
 install(FILES

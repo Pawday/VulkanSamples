@@ -27,32 +27,33 @@ include(add_system_library)
 include(target_cxx23)
 include(target_strict_compilation)
 
+add_library(${PREF}CPPTraceLauncher STATIC CPPTraceLauncher.cc)
+target_link_libraries(${PREF}CPPTraceLauncher PRIVATE ${PREF}cpptrace.headers ${PREF}cpptrace.static)
+add_library(${PREF}Launcher ALIAS ${PREF}CPPTraceLauncher)
+
 function(add_application TARGET_NAME)
-    if(NOT TARGET ${PREF}CPPTraceLauncher)
-        add_library(${PREF}CPPTraceLauncher STATIC CPPTraceLauncher.cc)
-        target_link_libraries(${PREF}CPPTraceLauncher PRIVATE ${PREF}cpptrace.headers ${PREF}cpptrace.static)
-    endif()
-    if(NOT TARGET ${PREF}Launcher)
-        add_library(${PREF}Launcher ALIAS ${PREF}CPPTraceLauncher)
-    endif()
+    set(LIBRARY_TARGET_NAME "${TARGET_NAME}.applib")
+    set(EXEC_TARGET_NAME "${TARGET_NAME}")
 
-    add_library(${TARGET_NAME} STATIC ${ARGN})
-    target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME "${TARGET_NAME}_applib")
-    target_cxx23(${TARGET_NAME})
-    target_strict_compilation(${TARGET_NAME})
+    add_library(${LIBRARY_TARGET_NAME} STATIC ${ARGN})
+    set_target_properties(${LIBRARY_TARGET_NAME} PROPERTIES EXCLUDE_FROM_ALL ON)
+    target_include_directories(${LIBRARY_TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_cxx23(${LIBRARY_TARGET_NAME})
+    target_strict_compilation(${LIBRARY_TARGET_NAME})
 
-    set(EXEC_TARGET_NAME "${TARGET_NAME}.exec")
     add_executable(${EXEC_TARGET_NAME} $<TARGET_OBJECTS:${PREF}Launcher>)
-    set_target_properties(${EXEC_TARGET_NAME} PROPERTIES OUTPUT_NAME "${TARGET_NAME}")
-    target_link_libraries(${EXEC_TARGET_NAME} PRIVATE ${PREF}Launcher ${TARGET_NAME})
+    target_link_libraries(${EXEC_TARGET_NAME} PRIVATE ${PREF}Launcher ${LIBRARY_TARGET_NAME})
 endfunction()
 
-function(install_application TARGET_NAME)
-    set(EXEC_TARGET_NAME "${TARGET_NAME}.exec")
-    install(TARGETS ${EXEC_TARGET_NAME} ${ARGN})
+function(application_sources TARGET_NAME)
+    set(LIBRARY_TARGET_NAME "${TARGET_NAME}.applib")
+    target_sources(${LIBRARY_TARGET_NAME} ${ARGN})
 endfunction()
 
+function(application_link_libraries TARGET_NAME)
+    set(LIBRARY_TARGET_NAME "${TARGET_NAME}.applib")
+    target_link_libraries(${LIBRARY_TARGET_NAME} ${ARGN})
+endfunction()
 
 list(APPEND HOST_APPLICATIONS
     TestHostApplication
@@ -72,7 +73,11 @@ endif()
 if(${PREF}USE_PACKAGED_HOST_APPS)
     find_package(${HOST_APPS_EXPORT_NAME} REQUIRED)
 else()
-    add_subdirectory(host_apps)
+    foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
+        set(TGT "${PREF}host_${HOST_APPLICATION}")
+        set_target_properties(${TGT} PROPERTIES EXCLUDE_FROM_ALL ON)
+    endforeach()
+    add_subdirectory(host_apps EXCLUDE_FROM_ALL)
 endif()
 
 add_host_tool(glslang HAS_GLSLAND)
@@ -106,7 +111,7 @@ target_precompile_headers(${PREF}Common
 )
 
 add_application(${PREF}OffscreenDraw OffscreenDraw.cc)
-target_link_libraries(${PREF}OffscreenDraw PRIVATE ${PREF}Common)
+application_link_libraries(${PREF}OffscreenDraw PRIVATE ${PREF}Common)
 
 if(NOT ${${PREF}WAYLAND_DYNAMIC})
     add_system_library(wayland-client)
@@ -126,16 +131,16 @@ target_link_libraries(${PREF}WaylandContext PUBLIC
 )
 
 add_application(${PREF}WaylandSurface WaylandSurface.cc)
-target_link_libraries(${PREF}WaylandSurface PRIVATE
+application_link_libraries(${PREF}WaylandSurface PRIVATE
     ${PREF}Common
     ${PREF}WaylandContext
 )
 
 add_application(${PREF}DMABuf DMABuf.cc)
-target_link_libraries(${PREF}DMABuf PRIVATE
+application_link_libraries(${PREF}DMABuf PRIVATE
     ${PREF}Common
     ${PREF}WaylandContext
 )
 
 add_application(${PREF}LauncherTest LauncherTest.cc)
-target_link_libraries(${PREF}LauncherTest PRIVATE ${PREF}CPPTraceLauncher)
+application_link_libraries(${PREF}LauncherTest PRIVATE ${PREF}CPPTraceLauncher)
