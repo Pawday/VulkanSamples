@@ -73,6 +73,7 @@ if(USE_DWARF)
     target_link_libraries(${PREF}cpptrace.static
         PRIVATE
             ${PREF}libdwarf.headers
+        INTERFACE
             ${PREF}libdwarf.static
     )
 endif()
