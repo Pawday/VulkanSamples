@@ -1,0 +1,1063 @@
+#include <charconv>
+#include <expected>
+#include <format>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <optional>
+#include <sstream>
+#include <stack>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <unordered_map>
+#include <utility>
+#include <variant>
+#include <vector>
+
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+
+#include <expat.h>
+#include <expat_external.h>
+
+#include "Application.hh"
+
+template <typename T>
+struct FormatVectorWrap
+{
+    const std::vector<T> &val;
+};
+
+// clang-format off
+struct WaylandArgTypeInt {};
+struct WaylandArgTypeUInt {};
+struct WaylandArgTypeUIntEnum
+{
+    std::optional<std::string> interface_name;
+    std::string name;
+};
+struct WaylandArgTypeFixed {};
+struct WaylandArgTypeString {};
+struct WaylandArgTypeNullString {};
+struct WaylandArgTypeObject {};
+struct WaylandArgTypeNullObject {};
+struct WaylandArgTypeNewID {};
+struct WaylandArgTypeArray {};
+struct WaylandArgTypeFD {};
+
+using WaylandArgType = std::variant<
+    WaylandArgTypeInt,
+    WaylandArgTypeUInt,
+    WaylandArgTypeUIntEnum,
+    WaylandArgTypeFixed,
+    WaylandArgTypeString,
+    WaylandArgTypeNullString,
+    WaylandArgTypeObject,
+    WaylandArgTypeNullObject,
+    WaylandArgTypeNewID,
+    WaylandArgTypeArray,
+    WaylandArgTypeFD
+>;
+// clang-format on
+
+struct WaylandArg
+{
+    std::string name;
+    WaylandArgType type;
+};
+
+struct WaylandEnum
+{
+    std::string name;
+    std::string description;
+    struct Entry
+    {
+        std::string name;
+        std::string summary;
+        uint32_t value;
+    };
+    std::vector<Entry> entries;
+};
+
+struct WaylandMessage
+{
+    enum class Type
+    {
+        DESTRUCTOR
+    };
+
+    std::string name;
+    std::string description;
+    std::optional<Type> type;
+    std::string summary;
+    std::vector<WaylandArg> args;
+};
+
+// clang-format off
+struct WaylandRequest : WaylandMessage {};
+struct WaylandEvent : WaylandMessage {};
+// clang-format on
+
+struct WaylandInterface
+{
+    std::string name;
+    uint32_t verison;
+    std::string description;
+    std::vector<WaylandRequest> requests;
+    std::vector<WaylandEvent> events;
+};
+
+template <typename T>
+struct std::formatter<FormatVectorWrap<T>>
+{
+    template <class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext &ctx)
+    {
+        auto start = ctx.begin();
+        auto end = ctx.begin();
+
+        if (start != end && *start != '}') {
+            throw std::format_error("Invalid format args");
+        }
+
+        return start;
+    }
+
+    template <class FmtContext>
+    FmtContext::iterator format(FormatVectorWrap<T> s, FmtContext &ctx) const
+    {
+        bool first = true;
+        std::format_to(ctx.out(), "[");
+        for (auto &el : s.val) {
+            if (!first) {
+                std::format_to(ctx.out(), ",");
+            }
+            first = false;
+
+            std::format_to(ctx.out(), "{}", el);
+        }
+        std::format_to(ctx.out(), "]");
+        return ctx.out();
+    }
+};
+
+template <>
+struct std::formatter<WaylandArgType>
+{
+    template <typename FmtContext>
+    struct WaylandArgTypeNameVisitor
+    {
+        explicit WaylandArgTypeNameVisitor(FmtContext &ctx) : _ctx{ctx}
+        {
+        }
+#define ADD_OVERLOAD(TYPENAME, type_print_name)                                \
+    auto operator()(const TYPENAME &)->FmtContext::iterator                    \
+    {                                                                          \
+        std::format_to(_ctx.out(), "{{\"name\":\"{}\"}}", type_print_name);    \
+        return _ctx.out();                                                     \
+    }
+
+        ADD_OVERLOAD(WaylandArgTypeInt, "int")
+        ADD_OVERLOAD(WaylandArgTypeUInt, "uint")
+
+        auto operator()(const WaylandArgTypeUIntEnum &v) -> FmtContext::iterator
+        {
+            std::format_to(_ctx.out(), "{{");
+            std::format_to(_ctx.out(), "\"name\":\"enum\"");
+            if (v.interface_name) {
+                std::format_to(_ctx.out(), ",");
+                std::format_to(
+                    _ctx.out(),
+                    "\"interface\":\"{}\"",
+                    v.interface_name.value());
+            }
+            std::format_to(_ctx.out(), ",");
+            std::format_to(_ctx.out(), "\"enum_name\":\"{}\"", v.name);
+            std::format_to(_ctx.out(), "}}");
+            return _ctx.out();
+        }
+
+        ADD_OVERLOAD(WaylandArgTypeFixed, "fixed")
+        ADD_OVERLOAD(WaylandArgTypeString, "string")
+        ADD_OVERLOAD(WaylandArgTypeNullString, "?str")
+        ADD_OVERLOAD(WaylandArgTypeObject, "obj")
+        ADD_OVERLOAD(WaylandArgTypeNullObject, "?obj")
+        ADD_OVERLOAD(WaylandArgTypeNewID, "id")
+        ADD_OVERLOAD(WaylandArgTypeArray, "arr")
+        ADD_OVERLOAD(WaylandArgTypeFD, "fd")
+#undef ADD_OVERLOAD
+
+      private:
+        FmtContext &_ctx;
+    };
+
+    template <class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext &ctx)
+    {
+        auto start = ctx.begin();
+        auto end = ctx.begin();
+
+        if (start != end && *start != '}') {
+            throw std::format_error("Invalid format args");
+        }
+
+        return start;
+    }
+
+    template <class FmtContext>
+    FmtContext::iterator
+        format(const WaylandArgType &type, FmtContext &ctx) const
+    {
+        WaylandArgTypeNameVisitor vis{ctx};
+        return std::visit(vis, type);
+    }
+};
+
+template <>
+struct std::formatter<WaylandArg>
+{
+    template <class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext &ctx)
+    {
+        auto start = ctx.begin();
+        auto end = ctx.begin();
+
+        if (start != end && *start != '}') {
+            throw std::format_error("Invalid format args");
+        }
+
+        return start;
+    }
+
+    template <class FmtContext>
+    FmtContext::iterator format(const WaylandArg &s, FmtContext &ctx) const
+    {
+        std::format_to(ctx.out(), "{{");
+        std::format_to(ctx.out(), "\"name\":\"{}\"", s.name);
+        std::format_to(ctx.out(), ",");
+        std::format_to(ctx.out(), "\"type\":{}", s.type);
+        std::format_to(ctx.out(), "}}");
+        return ctx.out();
+    }
+};
+
+template <>
+struct std::formatter<WaylandEnum::Entry>
+{
+    template <class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext &ctx)
+    {
+        auto start = ctx.begin();
+        auto end = ctx.begin();
+
+        if (start != end && *start != '}') {
+            throw std::format_error("Invalid format args");
+        }
+
+        return start;
+    }
+
+    template <class FmtContext>
+    FmtContext::iterator
+        format(const WaylandEnum::Entry &entry, FmtContext &ctx) const
+    {
+        std::format_to(
+            ctx.out(),
+            "{{\"name\":\"{}\",\"value\":{}}}",
+            entry.name,
+            entry.value);
+        return ctx.out();
+    }
+};
+
+template <>
+struct std::formatter<WaylandEnum>
+{
+    template <class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext &ctx)
+    {
+        auto start = ctx.begin();
+        auto end = ctx.begin();
+
+        if (start != end && *start != '}') {
+            throw std::format_error("Invalid format args");
+        }
+
+        return start;
+    }
+
+    template <class FmtContext>
+    FmtContext::iterator format(const WaylandEnum &s, FmtContext &ctx) const
+    {
+        FormatVectorWrap<WaylandEnum::Entry> fmt_entries(s.entries);
+        std::format_to(
+            ctx.out(), "{{\"name\":{},\"entries\":{}}}", s.name, fmt_entries);
+        return ctx.out();
+    }
+};
+
+const char *to_string(WaylandMessage::Type t)
+{
+    switch (t) {
+    case WaylandMessage::Type::DESTRUCTOR:
+        return "DESTRUCTOR";
+    }
+    return "?";
+}
+
+template <>
+struct std::formatter<WaylandMessage>
+{
+    template <class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext &ctx)
+    {
+        auto start = ctx.begin();
+        auto end = ctx.begin();
+
+        if (start != end && *start != '}') {
+            throw std::format_error("Invalid format args");
+        }
+
+        return start;
+    }
+
+    template <class FmtContext>
+    FmtContext::iterator format(const WaylandMessage &s, FmtContext &ctx) const
+    {
+        std::format_to(ctx.out(), "{{");
+        std::format_to(ctx.out(), "\"name\":\"{}\"", s.name);
+        if (s.type) {
+            std::format_to(ctx.out(), ",");
+            std::format_to(
+                ctx.out(), "\"type\":\"{}\"", to_string(s.type.value()));
+        }
+        FormatVectorWrap<WaylandArg> arg_fmt{s.args};
+        std::format_to(ctx.out(), ",");
+        std::format_to(ctx.out(), "\"args\":{}", arg_fmt);
+        std::format_to(ctx.out(), "}}");
+        return ctx.out();
+    }
+};
+
+template <>
+struct std::formatter<WaylandRequest>
+{
+    template <class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext &ctx)
+    {
+        auto start = ctx.begin();
+        auto end = ctx.begin();
+
+        if (start != end && *start != '}') {
+            throw std::format_error("Invalid format args");
+        }
+
+        return start;
+    }
+
+    template <class FmtContext>
+    FmtContext::iterator format(const WaylandRequest &s, FmtContext &ctx) const
+    {
+        std::format_to(ctx.out(), "{}", static_cast<const WaylandMessage &>(s));
+        return ctx.out();
+    }
+};
+
+template <>
+struct std::formatter<WaylandEvent>
+{
+    template <class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext &ctx)
+    {
+        auto start = ctx.begin();
+        auto end = ctx.begin();
+
+        if (start != end && *start != '}') {
+            throw std::format_error("Invalid format args");
+        }
+
+        return start;
+    }
+
+    template <class FmtContext>
+    FmtContext::iterator format(const WaylandEvent &s, FmtContext &ctx) const
+    {
+        std::format_to(ctx.out(), "{}", static_cast<const WaylandMessage &>(s));
+        return ctx.out();
+    }
+};
+
+template <>
+struct std::formatter<WaylandInterface>
+{
+    template <class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext &ctx)
+    {
+        auto start = ctx.begin();
+        auto end = ctx.begin();
+
+        if (start != end && *start != '}') {
+            throw std::format_error("Invalid format args");
+        }
+
+        return start;
+    }
+
+    template <class FmtContext>
+    FmtContext::iterator
+        format(const WaylandInterface &i, FmtContext &ctx) const
+    {
+        std::format_to(ctx.out(), "{{");
+        std::format_to(ctx.out(), "\"name\":\"{}\"", i.name);
+        std::format_to(ctx.out(), ",");
+        std::format_to(ctx.out(), "\"version\":{}", i.verison);
+        FormatVectorWrap<WaylandRequest> request_fmt{i.requests};
+        std::format_to(ctx.out(), ",");
+        std::format_to(ctx.out(), "\"requests\":{}", request_fmt);
+        FormatVectorWrap<WaylandEvent> event_fmt{i.events};
+        std::format_to(ctx.out(), ",");
+        std::format_to(ctx.out(), "\"events\":{}", event_fmt);
+        std::format_to(ctx.out(), "}}");
+        return ctx.out();
+    }
+};
+
+struct Parser
+{
+    Parser()
+    {
+        handle = []() {
+            auto parser = XML_ParserCreate(nullptr);
+            if (!parser) {
+                throw std::runtime_error("Cannot init parser");
+            }
+            return parser;
+        }();
+    }
+
+    struct Attribute
+    {
+        std::string_view key;
+        std::string_view value;
+    };
+
+    template <typename UserDataT>
+    struct Callbacks
+    {
+        UserDataT &user_data;
+        void (UserDataT::*start)(
+            std::string_view el, const std::vector<Attribute> &attrs);
+        void (UserDataT::*data)(std::string_view data);
+        void (UserDataT::*end)(std::string_view el);
+    };
+
+    template <typename UserDataT>
+    void parse(Callbacks<UserDataT> &callbacks, std::string_view data)
+    {
+        struct Context
+        {
+            Callbacks<UserDataT> &cb;
+            std::vector<Attribute> attrs;
+        } context{callbacks, {}};
+
+        XML_ParserReset(handle, nullptr);
+        XML_SetUserData(handle, &context);
+        XML_SetCharacterDataHandler(
+            handle, [](void *userData, const XML_Char *s, int len) {
+                Context &ctx = *reinterpret_cast<Context *>(userData);
+                (ctx.cb.user_data.*ctx.cb.data)(std::string_view{s, s + len});
+            });
+        XML_SetElementHandler(
+            handle,
+            [](void *userData, const XML_Char *name, const XML_Char **atts_p) {
+                Context &ctx = *reinterpret_cast<Context *>(userData);
+
+                auto &attrs = ctx.attrs;
+                ctx.attrs.clear();
+
+                size_t attr_offset = 0;
+                while (atts_p[attr_offset]) {
+                    std::string_view key{atts_p[attr_offset]};
+                    std::string_view val{atts_p[attr_offset + 1]};
+                    attr_offset += 2;
+                    attrs.emplace_back(key, val);
+                }
+
+                (ctx.cb.user_data.*ctx.cb.start)(std::string_view{name}, attrs);
+            },
+            [](void *userData, const XML_Char *name) {
+                Context &ctx = *reinterpret_cast<Context *>(userData);
+                (ctx.cb.user_data.*ctx.cb.end)(std::string_view{name});
+            });
+
+        XML_Status status = XML_Parse(handle, data.data(), data.size(), true);
+        if (status != XML_STATUS_OK) {
+            XML_Error error = XML_GetErrorCode(handle);
+            std::string message =
+                std::format("XML_Parser error: ({})", XML_ErrorString(error));
+            throw std::runtime_error(std::move(message));
+        }
+    }
+
+    ~Parser()
+    {
+        if (handle) {
+            XML_ParserFree(handle);
+        }
+    }
+
+    Parser(Parser &&) = delete;
+    Parser &operator=(Parser &&) = delete;
+    Parser(const Parser &) = delete;
+    Parser &operator=(const Parser &) = delete;
+
+  private:
+    XML_Parser handle = nullptr;
+};
+
+struct WaylandProtoParser
+{
+    // clang-format off
+    using ParseTarget = std::variant<
+        WaylandArg,
+        WaylandEnum,
+        WaylandMessage,
+        WaylandRequest,
+        WaylandEvent,
+        WaylandInterface
+    >;
+    // clang-format on
+
+    using AttributeMap = std::unordered_map<std::string, std::string>;
+
+    auto make_attr_map(const std::vector<Parser::Attribute> &attrs)
+        -> AttributeMap
+    {
+        AttributeMap out;
+
+        for (auto &attr : attrs) {
+            std::string key{attr.key};
+            std::string val{attr.value};
+            if (out.contains(key)) {
+                std::string message = std::format(
+                    "Duplicate interface attribute [{}=[{}]]", key, val);
+                throw std::runtime_error(std::move(message));
+            }
+            out[std::move(key)] = std::move(val);
+        }
+
+        return out;
+    };
+
+    auto parse_interface(const AttributeMap &attrs) -> void
+    {
+        WaylandInterface new_interface{};
+
+        std::string name = attrs.at("name");
+        new_interface.name = std::move(name);
+        std::string vesion_string = attrs.at("version");
+
+        decltype(WaylandInterface::verison) version = 0;
+        auto status = std::from_chars(
+            vesion_string.data(),
+            vesion_string.data() + vesion_string.size(),
+            version);
+
+        std::optional<std::string> error_string;
+        if (!error_string && status.ec != std::errc{}) {
+            error_string = std::make_error_code(status.ec).message();
+        }
+
+        if (!error_string &&
+            status.ptr != vesion_string.data() + vesion_string.size()) {
+            error_string = std::format("Incomplete output [{}]", version);
+        }
+
+        if (error_string) {
+            std::string message = std::format(
+                "Cannot parse version string [{}] of interface [{}] : "
+                "status "
+                "[{}]",
+                vesion_string,
+                new_interface.name,
+                error_string.value());
+            throw std::runtime_error(std::move(message));
+        }
+
+        new_interface.verison = version;
+
+        targets.emplace(std::move(new_interface));
+    }
+
+    auto fin_interface() -> void
+    {
+        ParseTarget &active_target = targets.top();
+        WaylandInterface &active_interface =
+            std::get<WaylandInterface>(active_target);
+
+        interfaces.emplace_back(std::move(active_interface));
+        targets.pop();
+    }
+
+    auto parse_request(const AttributeMap &attrs) -> void
+    {
+        WaylandRequest new_request;
+        std::string request_name = attrs.at("name");
+
+        if (attrs.contains("type")) {
+            std::string type_string = attrs.at("type");
+            if (type_string == "destructor") {
+                new_request.type = WaylandRequest::Type::DESTRUCTOR;
+            } else {
+                std::string message =
+                    std::format("Unknown request type [{}]", type_string);
+                throw std::runtime_error(std::move(message));
+            }
+        }
+
+        new_request.name = std::move(request_name);
+        targets.emplace(std::move(new_request));
+    }
+
+    struct FinRequestVisitor
+    {
+        explicit FinRequestVisitor(WaylandRequest &req) : _req(req)
+        {
+        }
+
+        template <typename T>
+        void operator()(T &t)
+        {
+            std::string message = std::format(
+                "Attempt to add request field to {}", target_name(t));
+            throw std::runtime_error(std::move(message));
+        }
+
+        void operator()(WaylandInterface &interface)
+        {
+            interface.requests.emplace_back(std::move(_req));
+        }
+
+      private:
+        WaylandRequest &_req;
+    };
+
+    auto fin_request() -> void
+    {
+        ParseTarget &active_target = targets.top();
+        WaylandRequest request =
+            std::move(std::get<WaylandRequest>(active_target));
+        targets.pop();
+
+        ParseTarget &request_parent_target = targets.top();
+        std::visit(FinRequestVisitor{request}, request_parent_target);
+    }
+
+    auto parse_event(const AttributeMap &attrs) -> void
+    {
+        WaylandEvent new_event;
+        std::string event_name = attrs.at("name");
+
+        new_event.name = std::move(event_name);
+        targets.emplace(std::move(new_event));
+    }
+
+    struct FinEventVisitor
+    {
+        explicit FinEventVisitor(WaylandEvent &ev) : _ev(ev)
+        {
+        }
+
+        template <typename T>
+        void operator()(T &t)
+        {
+            std::string message = std::format(
+                "Attempt to add request field to {}", target_name(t));
+            throw std::runtime_error(std::move(message));
+        }
+
+        void operator()(WaylandInterface &interface)
+        {
+            interface.events.emplace_back(std::move(_ev));
+        }
+
+      private:
+        WaylandEvent &_ev;
+    };
+
+    auto fin_event() -> void
+    {
+        ParseTarget &active_target = targets.top();
+        WaylandEvent event = std::move(std::get<WaylandEvent>(active_target));
+        targets.pop();
+
+        ParseTarget &request_parent_target = targets.top();
+        std::visit(FinEventVisitor{event}, request_parent_target);
+    }
+
+    auto parse_arg_type(
+        [[maybe_unused]] const std::string &arg_type_string,
+        [[maybe_unused]] const AttributeMap &attrs)
+        -> std::expected<WaylandArgType, std::string>
+    {
+
+        /*
+         * * * `i`: int
+         * * `u`: uint
+         * * `f`: fixed
+         * * `s`: string
+         * * `o`: object
+         * * `n`: new_id
+         * * `a`: array
+         * * `h`: fd
+         * * `?`: following argument (`o` or `s`) is nullable
+         */
+
+        if (arg_type_string == "int") {
+            return WaylandArgTypeInt{};
+        }
+
+        if (arg_type_string == "uint") {
+
+            if (!attrs.contains("enum")) {
+                return WaylandArgTypeUInt{};
+            }
+
+            /*
+             * "<interface_name>.<enum_name>"
+             * or
+             * "<enum_name>"
+             */
+            std::string enum_location = attrs.at("enum");
+
+            bool has_interface_name =
+                enum_location.find(".") != enum_location.npos;
+
+            if (!has_interface_name) {
+                WaylandArgTypeUIntEnum out{};
+                out.name = std::move(enum_location);
+                return out;
+            }
+
+            auto split_dot = [](const std::string &s)
+                -> std::
+                    expected<std::pair<std::string, std::string>, std::string> {
+                        std::string first;
+                        bool found_sep = false;
+                        std::string second;
+
+                        for (auto c : s) {
+                            if (c == '.') {
+                                found_sep = true;
+                                continue;
+                            }
+
+                            if (!found_sep) {
+                                first += c;
+                                continue;
+                            }
+
+                            second += c;
+                        }
+
+                        if (!found_sep) {
+                            std::string message = std::format(
+                                "Cannot split string [{}] by dot", s);
+                            return std::unexpected(std::move(message));
+                        }
+
+                        return std::make_pair(
+                            std::move(first), std::move(second));
+                    };
+
+            auto sep_op = split_dot(enum_location);
+            if (!sep_op.has_value()) {
+                return std::unexpected(sep_op.error());
+            }
+            auto &sep = sep_op.value();
+
+            WaylandArgTypeUIntEnum out{};
+            out.interface_name = std::move(sep.first);
+            out.name = std::move(sep.second);
+            return out;
+        }
+
+        if (arg_type_string == "fixed") {
+            return WaylandArgTypeFixed{};
+        }
+
+        if (arg_type_string == "string" || arg_type_string == "object") {
+
+            WaylandArgType out_t;
+            WaylandArgType null_out_t;
+
+            if (arg_type_string == "string") {
+                out_t = WaylandArgTypeString{};
+                null_out_t = WaylandArgTypeNullString{};
+            } else if (arg_type_string == "object") {
+                out_t = WaylandArgTypeObject{};
+                null_out_t = WaylandArgTypeNullObject{};
+            } else {
+                std::string message = std::format(
+                    "Unexpected arg_type_string value change from"
+                    " \"string\" or \"\" to [{}]",
+                    arg_type_string);
+                return std::unexpected(std::move(message));
+            }
+
+            if (!attrs.contains("allow-null")) {
+                return out_t;
+            }
+
+            std::string allow_null_value = attrs.at("allow-null");
+            if (allow_null_value != "true") {
+                std::string message = std::format(
+                    "for tag <arg> \"allow-null\" attribute value must be set "
+                    "to \"true\", got [{}] instead",
+                    allow_null_value);
+                return std::unexpected(std::move(message));
+            }
+
+            return null_out_t;
+        }
+
+        if (arg_type_string == "new_id") {
+            return WaylandArgTypeNewID{};
+        }
+
+        if (arg_type_string == "array") {
+            return WaylandArgTypeArray{};
+        }
+
+        if (arg_type_string == "fd") {
+            return WaylandArgTypeFD{};
+        }
+
+        return std::unexpected(
+            std::format("[{}] is unknown type", arg_type_string));
+    }
+
+    auto parse_arg(const AttributeMap &attrs)
+    {
+        WaylandArg arg;
+        std::string name = attrs.at("name");
+        arg.name = std::move(name);
+
+        std::string type_string = attrs.at("type");
+        auto arg_type = parse_arg_type(type_string, attrs);
+        if (!arg_type) {
+            std::string message = std::format(
+                "Parsing [{}] type failure [{}]",
+                type_string,
+                arg_type.error());
+            throw std::runtime_error(std::move(message));
+        }
+        arg.type = std::move(arg_type.value());
+
+        targets.emplace(std::move(arg));
+    }
+
+    struct FinArgVisitor
+    {
+        explicit FinArgVisitor(WaylandArg &arg) : _arg{arg}
+        {
+        }
+
+        template <typename T>
+        void operator()(T &t)
+        {
+            std::string message = std::format(
+                "Attempt to add argument field to {}", target_name(t));
+            throw std::runtime_error(std::move(message));
+        }
+
+        void operator()(WaylandRequest &req)
+        {
+            req.args.emplace_back(std::move(_arg));
+        }
+
+        void operator()(WaylandEvent &event)
+        {
+            event.args.emplace_back(std::move(_arg));
+        }
+
+      private:
+        WaylandArg &_arg;
+    };
+
+    auto fin_arg()
+    {
+        ParseTarget &active_target = targets.top();
+        WaylandArg arg_target = std::move(std::get<WaylandArg>(active_target));
+        targets.pop();
+
+        ParseTarget &request_parent_target = targets.top();
+        std::visit(FinArgVisitor{arg_target}, request_parent_target);
+    }
+
+    enum class TagEvent
+    {
+        START,
+        END
+    };
+
+    using OptionalAttributeArray = std::optional<
+        std::reference_wrapper<const std::vector<Parser::Attribute>>>;
+
+    void dispatch_tag(
+        TagEvent event,
+        std::string_view tag,
+        OptionalAttributeArray attrs = std::nullopt)
+    {
+
+        bool need_attrs_map = event == TagEvent::START;
+
+        std::string_view known_tags[]{"interface", "request", "event", "arg"};
+        if (need_attrs_map) {
+            bool known = false;
+            for (auto s : known_tags) {
+                if (tag == s) {
+                    known = true;
+                    break;
+                }
+            }
+            need_attrs_map = known;
+        }
+
+        auto attrs_map = [&attrs, this, &need_attrs_map]()
+            -> std::optional<const AttributeMap> {
+            if (attrs && need_attrs_map) {
+                return make_attr_map(attrs.value());
+            }
+            return std::nullopt;
+        }();
+
+        if (tag == "interface") {
+            switch (event) {
+            case TagEvent::START:
+                parse_interface(attrs_map.value());
+                break;
+            case TagEvent::END:
+                fin_interface();
+                break;
+            }
+            return;
+        }
+
+        if (tag == "request") {
+            switch (event) {
+            case TagEvent::START:
+                parse_request(attrs_map.value());
+                break;
+            case TagEvent::END:
+                fin_request();
+                break;
+            }
+            return;
+        }
+
+        if (tag == "event") {
+            switch (event) {
+            case TagEvent::START:
+                parse_event(attrs_map.value());
+                break;
+            case TagEvent::END:
+                fin_event();
+                break;
+            }
+            return;
+        }
+
+        if (tag == "arg") {
+            switch (event) {
+            case TagEvent::START:
+                parse_arg(attrs_map.value());
+                break;
+            case TagEvent::END:
+                fin_arg();
+                break;
+            }
+            return;
+        }
+    }
+
+    void
+        start(std::string_view tag, const std::vector<Parser::Attribute> &attrs)
+    {
+        dispatch_tag(TagEvent::START, tag, std::ref(attrs));
+    }
+
+    auto data([[maybe_unused]] std::string_view data) -> void
+    {
+    }
+
+    auto end(std::string_view tag) -> void
+    {
+        dispatch_tag(TagEvent::END, tag);
+    }
+
+    auto get() const -> const std::vector<WaylandInterface> &
+    {
+        return interfaces;
+    };
+
+  private:
+    struct ParseTargetNameVisitor
+    {
+#define ADD_OVERLOAD(TYPENAME)                                                 \
+    std::string operator()(const TYPENAME &)                                   \
+    {                                                                          \
+        return "ParseTarget::" #TYPENAME;                                      \
+    }
+        ADD_OVERLOAD(WaylandArg)
+        ADD_OVERLOAD(WaylandEnum)
+        ADD_OVERLOAD(WaylandMessage)
+        ADD_OVERLOAD(WaylandRequest)
+        ADD_OVERLOAD(WaylandEvent)
+        ADD_OVERLOAD(WaylandInterface)
+#undef ADD_OVERLOAD
+    };
+
+    static std::string target_name(const ParseTarget &tgt)
+    {
+        return std::visit(ParseTargetNameVisitor{}, tgt);
+    }
+
+    std::vector<WaylandInterface> interfaces;
+
+    std::stack<ParseTarget> targets;
+};
+
+int Application::main()
+{
+    std::string protocol_xml = [&]() {
+        auto args = get_libc_args().value();
+        std::string file_name = args.argv.at(1);
+
+        std::ifstream file{file_name};
+        file.exceptions(std::ifstream::failbit);
+        file.exceptions(std::ifstream::badbit);
+        std::stringstream content;
+        content << file.rdbuf();
+        return content.str();
+    }();
+
+    WaylandProtoParser ctx;
+    Parser::Callbacks<WaylandProtoParser> pcbs{
+        ctx,
+        &WaylandProtoParser::start,
+        &WaylandProtoParser::data,
+        &WaylandProtoParser::end};
+
+    Parser p;
+    p.parse(pcbs, protocol_xml);
+
+    std::vector<WaylandInterface> interfaces = ctx.get();
+
+    std::cout << std::format("{}\n", FormatVectorWrap{interfaces});
+
+    return EXIT_SUCCESS;
+}

@@ -57,6 +57,7 @@ endfunction()
 
 list(APPEND HOST_APPLICATIONS
     TestHostApplication
+    WaylandScanner
 )
 
 foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
@@ -75,7 +76,7 @@ if(${PREF}USE_PACKAGED_HOST_APPS)
 else()
     foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
         set(TGT "${PREF}host_${HOST_APPLICATION}")
-        set_target_properties(${TGT} PROPERTIES EXCLUDE_FROM_ALL ON)
+	# set_target_properties(${TGT} PROPERTIES EXCLUDE_FROM_ALL ON) #TODO[CMake]: resolve host applications build policy
     endforeach()
     add_subdirectory(host_apps EXCLUDE_FROM_ALL)
 endif()

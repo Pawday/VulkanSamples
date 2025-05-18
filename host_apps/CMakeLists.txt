@@ -4,6 +4,14 @@ set(EXPORT_VERSION "0.0.0")
 application_sources(${PREF}host_TestHostApplication PRIVATE TestHostApplication.cc)
 
 
+application_sources(${PREF}host_WaylandScanner PRIVATE WaylandScanner.cc)
+application_link_libraries(${PREF}host_WaylandScanner
+    PRIVATE
+        ${PREF}expat.headers
+    INTERFACE
+        ${PREF}expat.static
+)
+
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(Config.cmake.in
@@ -30,7 +38,4 @@ install(FILES
 
 
 install(EXPORT ${HOST_APPS_EXPORT_NAME} DESTINATION "${HOST_APPS_EXPORT_NAME}-${EXPORT_VERSION}/cmake")
-
-foreach(S_TARGET ${STATIC_LIBS})
-endforeach()
 
