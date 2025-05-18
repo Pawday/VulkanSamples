@@ -1,3 +1,4 @@
+#include <iostream>
 #include <new>
 #include <optional>
 #include <stdexcept>
@@ -50,7 +51,8 @@ struct ClientCoreLibraryPosix
         void *sym = dlsym(_handle, name);
         const char *status = dlerror();
         if (status) {
-            throw std::runtime_error(status);
+            std::cout << "[WARN] " << status << '\n';
+            return nullptr;
         }
 
         return reinterpret_cast<PFN_T>(sym);
@@ -108,8 +110,8 @@ ClientCoreLibrary::ClientCoreLibrary()
     LOAD(wl_display_get_fd);
     LOAD(wl_display_dispatch);
     LOAD(wl_display_dispatch_queue);
-    // LOAD(wl_display_dispatch_timeout);
-    // LOAD(wl_display_dispatch_queue_timeout);
+    LOAD(wl_display_dispatch_timeout);
+    LOAD(wl_display_dispatch_queue_timeout);
     LOAD(wl_display_dispatch_queue_pending);
     LOAD(wl_display_dispatch_pending);
     LOAD(wl_display_get_error);
@@ -127,8 +129,10 @@ ClientCoreLibrary::ClientCoreLibrary()
     LOAD(wl_display_set_max_buffer_size);
 #undef LOAD
 
-    static_assert(sizeof(ClientCoreLibraryPosix) <= sizeof(ClientCoreLibrary::ImplT));
-    static_assert(alignof(ClientCoreLibraryPosix) <= alignof(ClientCoreLibrary::ImplT));
+    static_assert(
+        sizeof(ClientCoreLibraryPosix) <= sizeof(ClientCoreLibrary::ImplT));
+    static_assert(
+        alignof(ClientCoreLibraryPosix) <= alignof(ClientCoreLibrary::ImplT));
     new (impl()) ClientCoreLibraryPosix{std::move(lib)};
 }
 
