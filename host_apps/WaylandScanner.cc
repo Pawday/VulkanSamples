@@ -1,9 +1,11 @@
+#include <array>
 #include <charconv>
 #include <expected>
 #include <format>
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <optional>
 #include <sstream>
 #include <stack>
@@ -110,22 +112,22 @@ struct WaylandInterface
     std::vector<WaylandEvent> events;
 };
 
-template <typename T>
-struct std::formatter<FormatVectorWrap<T>>
+struct FormatterNoParseArgs
 {
     template <class ParseContext>
     constexpr ParseContext::iterator parse(ParseContext &ctx)
     {
-        auto start = ctx.begin();
-        auto end = ctx.begin();
-
-        if (start != end && *start != '}') {
-            throw std::format_error("Invalid format args");
+        if (*ctx.begin() != '}') {
+            throw std::format_error("Unexpected arguments");
         }
 
-        return start;
+        return ctx.begin();
     }
+};
 
+template <typename T>
+struct std::formatter<FormatVectorWrap<T>> : FormatterNoParseArgs
+{
     template <class FmtContext>
     FmtContext::iterator format(FormatVectorWrap<T> s, FmtContext &ctx) const
     {
@@ -145,7 +147,7 @@ struct std::formatter<FormatVectorWrap<T>>
 };
 
 template <>
-struct std::formatter<WaylandArgType>
+struct std::formatter<WaylandArgType> : FormatterNoParseArgs
 {
     template <typename FmtContext>
     struct WaylandArgTypeNameVisitor
@@ -194,19 +196,6 @@ struct std::formatter<WaylandArgType>
         FmtContext &_ctx;
     };
 
-    template <class ParseContext>
-    constexpr ParseContext::iterator parse(ParseContext &ctx)
-    {
-        auto start = ctx.begin();
-        auto end = ctx.begin();
-
-        if (start != end && *start != '}') {
-            throw std::format_error("Invalid format args");
-        }
-
-        return start;
-    }
-
     template <class FmtContext>
     FmtContext::iterator
         format(const WaylandArgType &type, FmtContext &ctx) const
@@ -217,21 +206,8 @@ struct std::formatter<WaylandArgType>
 };
 
 template <>
-struct std::formatter<WaylandArg>
+struct std::formatter<WaylandArg> : FormatterNoParseArgs
 {
-    template <class ParseContext>
-    constexpr ParseContext::iterator parse(ParseContext &ctx)
-    {
-        auto start = ctx.begin();
-        auto end = ctx.begin();
-
-        if (start != end && *start != '}') {
-            throw std::format_error("Invalid format args");
-        }
-
-        return start;
-    }
-
     template <class FmtContext>
     FmtContext::iterator format(const WaylandArg &s, FmtContext &ctx) const
     {
@@ -245,21 +221,8 @@ struct std::formatter<WaylandArg>
 };
 
 template <>
-struct std::formatter<WaylandEnum::Entry>
+struct std::formatter<WaylandEnum::Entry> : FormatterNoParseArgs
 {
-    template <class ParseContext>
-    constexpr ParseContext::iterator parse(ParseContext &ctx)
-    {
-        auto start = ctx.begin();
-        auto end = ctx.begin();
-
-        if (start != end && *start != '}') {
-            throw std::format_error("Invalid format args");
-        }
-
-        return start;
-    }
-
     template <class FmtContext>
     FmtContext::iterator
         format(const WaylandEnum::Entry &entry, FmtContext &ctx) const
@@ -274,21 +237,8 @@ struct std::formatter<WaylandEnum::Entry>
 };
 
 template <>
-struct std::formatter<WaylandEnum>
+struct std::formatter<WaylandEnum> : FormatterNoParseArgs
 {
-    template <class ParseContext>
-    constexpr ParseContext::iterator parse(ParseContext &ctx)
-    {
-        auto start = ctx.begin();
-        auto end = ctx.begin();
-
-        if (start != end && *start != '}') {
-            throw std::format_error("Invalid format args");
-        }
-
-        return start;
-    }
-
     template <class FmtContext>
     FmtContext::iterator format(const WaylandEnum &s, FmtContext &ctx) const
     {
@@ -309,21 +259,8 @@ const char *to_string(WaylandMessage::Type t)
 }
 
 template <>
-struct std::formatter<WaylandMessage>
+struct std::formatter<WaylandMessage> : FormatterNoParseArgs
 {
-    template <class ParseContext>
-    constexpr ParseContext::iterator parse(ParseContext &ctx)
-    {
-        auto start = ctx.begin();
-        auto end = ctx.begin();
-
-        if (start != end && *start != '}') {
-            throw std::format_error("Invalid format args");
-        }
-
-        return start;
-    }
-
     template <class FmtContext>
     FmtContext::iterator format(const WaylandMessage &s, FmtContext &ctx) const
     {
@@ -343,21 +280,8 @@ struct std::formatter<WaylandMessage>
 };
 
 template <>
-struct std::formatter<WaylandRequest>
+struct std::formatter<WaylandRequest> : FormatterNoParseArgs
 {
-    template <class ParseContext>
-    constexpr ParseContext::iterator parse(ParseContext &ctx)
-    {
-        auto start = ctx.begin();
-        auto end = ctx.begin();
-
-        if (start != end && *start != '}') {
-            throw std::format_error("Invalid format args");
-        }
-
-        return start;
-    }
-
     template <class FmtContext>
     FmtContext::iterator format(const WaylandRequest &s, FmtContext &ctx) const
     {
@@ -367,21 +291,8 @@ struct std::formatter<WaylandRequest>
 };
 
 template <>
-struct std::formatter<WaylandEvent>
+struct std::formatter<WaylandEvent> : FormatterNoParseArgs
 {
-    template <class ParseContext>
-    constexpr ParseContext::iterator parse(ParseContext &ctx)
-    {
-        auto start = ctx.begin();
-        auto end = ctx.begin();
-
-        if (start != end && *start != '}') {
-            throw std::format_error("Invalid format args");
-        }
-
-        return start;
-    }
-
     template <class FmtContext>
     FmtContext::iterator format(const WaylandEvent &s, FmtContext &ctx) const
     {
@@ -391,21 +302,8 @@ struct std::formatter<WaylandEvent>
 };
 
 template <>
-struct std::formatter<WaylandInterface>
+struct std::formatter<WaylandInterface> : FormatterNoParseArgs
 {
-    template <class ParseContext>
-    constexpr ParseContext::iterator parse(ParseContext &ctx)
-    {
-        auto start = ctx.begin();
-        auto end = ctx.begin();
-
-        if (start != end && *start != '}') {
-            throw std::format_error("Invalid format args");
-        }
-
-        return start;
-    }
-
     template <class FmtContext>
     FmtContext::iterator
         format(const WaylandInterface &i, FmtContext &ctx) const
