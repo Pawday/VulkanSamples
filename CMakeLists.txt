@@ -65,9 +65,9 @@ foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
     add_application(${TGT})
 endforeach()
 
-set(HOST_APPS_EXPORT_NAME "${PREF}host_apps")
+set(HOST_APPS_EXPORT_NAME "${PREF}host")
 if(${PREF}INSTALL_HOST_APPS_ONLY)
-    add_subdirectory(host_apps)
+    add_subdirectory(host)
     return()
 endif()
 
@@ -76,9 +76,9 @@ if(${PREF}USE_PACKAGED_HOST_APPS)
 else()
     foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
         set(TGT "${PREF}host_${HOST_APPLICATION}")
-	# set_target_properties(${TGT} PROPERTIES EXCLUDE_FROM_ALL ON) #TODO[CMake]: resolve host applications build policy
+        # set_target_properties(${TGT} PROPERTIES EXCLUDE_FROM_ALL ON) #TODO[CMake]: resolve host applications build policy
     endforeach()
-    add_subdirectory(host_apps EXCLUDE_FROM_ALL)
+    add_subdirectory(host EXCLUDE_FROM_ALL)
 endif()
 
 add_host_tool(glslang HAS_GLSLAND)
