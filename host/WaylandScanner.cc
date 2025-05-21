@@ -110,6 +110,7 @@ struct WaylandInterface
     std::string description;
     std::vector<WaylandRequest> requests;
     std::vector<WaylandEvent> events;
+    std::vector<WaylandEnum> enums;
 };
 
 struct FormatterNoParseArgs
@@ -244,7 +245,10 @@ struct std::formatter<WaylandEnum> : FormatterNoParseArgs
     {
         FormatVectorWrap<WaylandEnum::Entry> fmt_entries(s.entries);
         std::format_to(
-            ctx.out(), "{{\"name\":{},\"entries\":{}}}", s.name, fmt_entries);
+            ctx.out(),
+            "{{\"name\":\"{}\",\"entries\":{}}}",
+            s.name,
+            fmt_entries);
         return ctx.out();
     }
 };
@@ -318,6 +322,9 @@ struct std::formatter<WaylandInterface> : FormatterNoParseArgs
         FormatVectorWrap<WaylandEvent> event_fmt{i.events};
         std::format_to(ctx.out(), ",");
         std::format_to(ctx.out(), "\"events\":{}", event_fmt);
+        FormatVectorWrap<WaylandEnum> enums_fmt{i.enums};
+        std::format_to(ctx.out(), ",");
+        std::format_to(ctx.out(), "\"enums\":{}", enums_fmt);
         std::format_to(ctx.out(), "}}");
         return ctx.out();
     }
@@ -422,6 +429,7 @@ struct WaylandProtoParser
     using ParseTarget = std::variant<
         WaylandArg,
         WaylandEnum,
+        WaylandEnum::Entry,
         WaylandMessage,
         WaylandRequest,
         WaylandEvent,
@@ -450,6 +458,31 @@ struct WaylandProtoParser
         return out;
     };
 
+    template <typename T>
+    std::expected<T, std::string>
+        parse_num(const std::string &str, int base = 10)
+    {
+        T out = 0;
+        auto status =
+            std::from_chars(str.data(), str.data() + str.size(), out, base);
+
+        std::optional<std::string> error_string;
+
+        if (!error_string && status.ec != std::errc{}) {
+            error_string = std::make_error_code(status.ec).message();
+        }
+
+        if (!error_string && status.ptr != str.data() + str.size()) {
+            error_string = std::format("Incomplete output [{}]", str);
+        }
+
+        if (error_string) {
+            return std::unexpected{std::move(error_string.value())};
+        }
+
+        return out;
+    }
+
     auto parse_interface(const AttributeMap &attrs) -> void
     {
         WaylandInterface new_interface{};
@@ -458,20 +491,12 @@ struct WaylandProtoParser
         new_interface.name = std::move(name);
         std::string vesion_string = attrs.at("version");
 
-        decltype(WaylandInterface::verison) version = 0;
-        auto status = std::from_chars(
-            vesion_string.data(),
-            vesion_string.data() + vesion_string.size(),
-            version);
+        auto version_op =
+            parse_num<decltype(WaylandInterface::verison)>(vesion_string);
 
-        std::optional<std::string> error_string;
-        if (!error_string && status.ec != std::errc{}) {
-            error_string = std::make_error_code(status.ec).message();
-        }
-
-        if (!error_string &&
-            status.ptr != vesion_string.data() + vesion_string.size()) {
-            error_string = std::format("Incomplete output [{}]", version);
+        std::optional<std::string> error_string{};
+        if (!version_op.has_value()) {
+            error_string = std::move(version_op.error());
         }
 
         if (error_string) {
@@ -485,7 +510,7 @@ struct WaylandProtoParser
             throw std::runtime_error(std::move(message));
         }
 
-        new_interface.verison = version;
+        new_interface.verison = version_op.value();
 
         targets.emplace(std::move(new_interface));
     }
@@ -796,6 +821,92 @@ struct WaylandProtoParser
         std::visit(FinArgVisitor{arg_target}, request_parent_target);
     }
 
+    auto parse_enum(const AttributeMap &attrs)
+    {
+        WaylandEnum new_enum{};
+        if (!attrs.contains("name")) {
+
+            std::string message = "Found unnamed enum tag";
+            if (targets.size() != 0) {
+                auto &parent = targets.top();
+                message = std::format("{} in {}", message, target_name(parent));
+            }
+            throw std::runtime_error{std::move(message)};
+        }
+        new_enum.name = attrs.at("name");
+        targets.emplace(std::move(new_enum));
+    }
+
+    void fin_enum()
+    {
+        ParseTarget &active_target = targets.top();
+        WaylandEnum enum_target =
+            std::move(std::get<WaylandEnum>(active_target));
+        targets.pop();
+
+        ParseTarget &interface_parent_target = targets.top();
+        WaylandInterface &interface =
+            std::get<WaylandInterface>(interface_parent_target);
+
+        interface.enums.emplace_back(std::move(enum_target));
+    }
+
+    auto parse_entry(const AttributeMap &attrs)
+    {
+        WaylandEnum::Entry entry{};
+
+        std::string name = attrs.at("name");
+        std::string value_string = attrs.at("value");
+
+        bool is_hex = true;
+        is_hex = is_hex && value_string.size() > 2;
+        is_hex = is_hex && value_string[0] == '0';
+        is_hex = is_hex && (value_string[1] == 'x' || value_string[1] == 'X');
+
+        int base = 10;
+        if (is_hex) {
+            base = 16;
+            value_string = value_string.substr(2);
+        }
+
+        auto value_op =
+            parse_num<decltype(WaylandEnum::Entry::value)>(value_string, base);
+
+        std::optional<std::string> error_string{};
+        if (!value_op.has_value()) {
+            error_string = std::move(value_op.error());
+        }
+
+        if (error_string) {
+            std::string message = std::format(
+                "Cannot parse version string [{}] of entry [{}] : "
+                "status "
+                "[{}]",
+                value_string,
+                name,
+                error_string.value());
+            throw std::runtime_error(std::move(message));
+        }
+
+        entry.name = std::move(name);
+        entry.value = value_op.value();
+
+        targets.emplace(std::move(entry));
+    }
+
+    auto fin_entry()
+    {
+        ParseTarget &active_target = targets.top();
+        WaylandEnum::Entry entry =
+            std::move(std::get<WaylandEnum::Entry>(active_target));
+        targets.pop();
+
+        ParseTarget &enum_target = targets.top();
+        WaylandEnum &wl_enum = std::get<WaylandEnum>(enum_target);
+
+        wl_enum.entries.emplace_back(std::move(entry));
+    }
+
     enum class TagEvent
     {
         START,
@@ -813,7 +924,8 @@ struct WaylandProtoParser
 
         bool need_attrs_map = event == TagEvent::START;
 
-        std::string_view known_tags[]{"interface", "request", "event", "arg"};
+        std::string_view known_tags[]{
+            "interface", "request", "event", "arg", "enum", "entry"};
         if (need_attrs_map) {
             bool known = false;
             for (auto s : known_tags) {
@@ -880,6 +992,30 @@ struct WaylandProtoParser
             }
             return;
         }
+
+        if (tag == "enum") {
+            switch (event) {
+            case TagEvent::START:
+                parse_enum(attrs_map.value());
+                break;
+            case TagEvent::END:
+                fin_enum();
+                break;
+            }
+            return;
+        }
+
+        if (tag == "entry") {
+            switch (event) {
+            case TagEvent::START:
+                parse_entry(attrs_map.value());
+                break;
+            case TagEvent::END:
+                fin_entry();
+                break;
+            }
+            return;
+        }
     }
 
     void
@@ -905,17 +1041,22 @@ struct WaylandProtoParser
   private:
     struct ParseTargetNameVisitor
     {
-#define ADD_OVERLOAD(TYPENAME)                                                 \
-    std::string operator()(const TYPENAME &)                                   \
+#define ADD_OVERLOAD(TYPENAME, TAG_NAME)                                       \
+    std::string operator()(const TYPENAME &tgt)                                \
     {                                                                          \
-        return "ParseTarget::" #TYPENAME;                                      \
+        return std::format(                                                    \
+            "ParseTarget::{} (<{} name=[{}] ...>)",                            \
+            #TYPENAME,                                                         \
+            #TAG_NAME,                                                         \
+            tgt.name);                                                         \
     }
-        ADD_OVERLOAD(WaylandArg)
-        ADD_OVERLOAD(WaylandEnum)
-        ADD_OVERLOAD(WaylandMessage)
-        ADD_OVERLOAD(WaylandRequest)
-        ADD_OVERLOAD(WaylandEvent)
-        ADD_OVERLOAD(WaylandInterface)
+        ADD_OVERLOAD(WaylandArg, arg)
+        ADD_OVERLOAD(WaylandEnum, enum)
+        ADD_OVERLOAD(WaylandEnum::Entry, entry)
+        ADD_OVERLOAD(WaylandMessage, event | request)
+        ADD_OVERLOAD(WaylandRequest, request)
+        ADD_OVERLOAD(WaylandEvent, event)
+        ADD_OVERLOAD(WaylandInterface, interface)
 #undef ADD_OVERLOAD
     };
 
