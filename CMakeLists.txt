@@ -18,6 +18,7 @@ endif()
 if(${PREF}USE_PACKAGED_DEPS)
     find_package(${DEPS_EXPORT_NAME} REQUIRED)
 else()
+    include(deps/Declare.cmake)
     add_subdirectory(deps EXCLUDE_FROM_ALL)
 endif()
 

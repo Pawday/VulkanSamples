@@ -1,38 +1,12 @@
 set(EXPORT_VERSION "0.0.0")
 
-list(APPEND STATIC_LIBS
-    libdwarf
-    cpptrace
-    expat
-)
-
-list(APPEND HEADER_LIBS
-    vulkan
-    wayland_client
-)
-
-list(APPEND HEADER_LIBS
-    ${STATIC_LIBS}
-)
-
-foreach(H_TARGET ${HEADER_LIBS})
-    set(TGT "${PREF}${H_TARGET}.headers")
-    add_library(${TGT} INTERFACE)
-endforeach()
-
-foreach(S_TARGET ${STATIC_LIBS})
-    set(TGT "${PREF}${S_TARGET}.static")
-    add_library(${TGT} STATIC)
-endforeach()
-
-
+include(Declare.cmake)
 
 add_subdirectory(Vulkan-Headers)
 add_subdirectory(Wayland)
 add_subdirectory(cpptrace)
 add_subdirectory(expat)
 add_subdirectory(libdwarf)
-
 
 
 include(CMakePackageConfigHelpers)
