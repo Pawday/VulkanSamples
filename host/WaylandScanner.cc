@@ -80,6 +80,7 @@ struct WaylandEnum
         std::string name;
         std::string summary;
         uint32_t value;
+        bool is_hex;
     };
     std::vector<Entry> entries;
 };
@@ -228,11 +229,15 @@ struct std::formatter<WaylandEnum::Entry> : FormatterNoParseArgs
     FmtContext::iterator
         format(const WaylandEnum::Entry &entry, FmtContext &ctx) const
     {
-        std::format_to(
-            ctx.out(),
-            "{{\"name\":\"{}\",\"value\":{}}}",
-            entry.name,
-            entry.value);
+        std::format_to(ctx.out(), "{{");
+        std::format_to(ctx.out(), "\"name\":\"{}\"", entry.name);
+        std::format_to(ctx.out(), ",");
+        std::format_to(ctx.out(), "\"value\":{}", entry.value);
+        if (entry.is_hex) {
+            std::format_to(ctx.out(), ",");
+            std::format_to(ctx.out(), "\"value_hex\":\"{:x}\"", entry.value);
+        }
+        std::format_to(ctx.out(), "}}");
         return ctx.out();
     }
 };
@@ -890,6 +895,7 @@ struct WaylandProtoParser
 
         entry.name = std::move(name);
         entry.value = value_op.value();
+        entry.is_hex = is_hex;
 
         targets.emplace(std::move(entry));
     }
@@ -907,130 +913,137 @@ struct WaylandProtoParser
         wl_enum.entries.emplace_back(std::move(entry));
     }
 
-    enum class TagEvent
+    // clang-format off
+    struct Tag {
+    struct Interface {};
+    struct Request {};
+    struct Event {};
+    struct Arg {};
+    struct Enum {};
+    struct Entry {};
+    };
+    using KnownTag = std::variant<
+        Tag::Interface,
+        Tag::Request,
+        Tag::Event,
+        Tag::Arg,
+        Tag::Enum,
+        Tag::Entry
+    >;
+    // clang-format on
+
+    std::optional<KnownTag> parse_tag(std::string_view s)
     {
-        START,
-        END
+#define RETURN_IF_MATCH(LITERAL, TYPENAME)                                     \
+    if (LITERAL == s) {                                                        \
+        return TYPENAME{};                                                     \
+    }
+        RETURN_IF_MATCH("interface", Tag::Interface);
+        RETURN_IF_MATCH("request", Tag::Request);
+        RETURN_IF_MATCH("event", Tag::Event);
+        RETURN_IF_MATCH("arg", Tag::Arg);
+        RETURN_IF_MATCH("enum", Tag::Enum);
+        RETURN_IF_MATCH("entry", Tag::Entry);
+#undef RETURN_IF_MATCH
+        return std::nullopt;
     };
 
-    using OptionalAttributeArray = std::optional<
-        std::reference_wrapper<const std::vector<Parser::Attribute>>>;
-
-    void dispatch_tag(
-        TagEvent event,
-        std::string_view tag,
-        OptionalAttributeArray attrs = std::nullopt)
+    struct StartTagVisitor
     {
+        WaylandProtoParser &P;
+        AttributeMap attr_map;
 
-        bool need_attrs_map = event == TagEvent::START;
-
-        std::string_view known_tags[]{
-            "interface", "request", "event", "arg", "enum", "entry"};
-        if (need_attrs_map) {
-            bool known = false;
-            for (auto s : known_tags) {
-                if (tag == s) {
-                    known = true;
-                    break;
-                }
-            }
-            need_attrs_map = known;
+        void operator()(Tag::Interface)
+        {
+            P.parse_interface(attr_map);
         }
 
-        auto attrs_map = [&attrs, this, &need_attrs_map]()
-            -> std::optional<const AttributeMap> {
-            if (attrs && need_attrs_map) {
-                return make_attr_map(attrs.value());
-            }
-            return std::nullopt;
-        }();
-
-        if (tag == "interface") {
-            switch (event) {
-            case TagEvent::START:
-                parse_interface(attrs_map.value());
-                break;
-            case TagEvent::END:
-                fin_interface();
-                break;
-            }
-            return;
+        void operator()(Tag::Request)
+        {
+            P.parse_request(attr_map);
         }
 
-        if (tag == "request") {
-            switch (event) {
-            case TagEvent::START:
-                parse_request(attrs_map.value());
-                break;
-            case TagEvent::END:
-                fin_request();
-                break;
-            }
-            return;
+        void operator()(Tag::Event)
+        {
+            P.parse_event(attr_map);
         }
 
-        if (tag == "event") {
-            switch (event) {
-            case TagEvent::START:
-                parse_event(attrs_map.value());
-                break;
-            case TagEvent::END:
-                fin_event();
-                break;
-            }
-            return;
+        void operator()(Tag::Arg)
+        {
+            P.parse_arg(attr_map);
         }
 
-        if (tag == "arg") {
-            switch (event) {
-            case TagEvent::START:
-                parse_arg(attrs_map.value());
-                break;
-            case TagEvent::END:
-                fin_arg();
-                break;
-            }
-            return;
+        void operator()(Tag::Enum)
+        {
+            P.parse_enum(attr_map);
         }
 
-        if (tag == "enum") {
-            switch (event) {
-            case TagEvent::START:
-                parse_enum(attrs_map.value());
-                break;
-            case TagEvent::END:
-                fin_enum();
-                break;
-            }
-            return;
+        void operator()(Tag::Entry)
+        {
+            P.parse_entry(attr_map);
         }
-
-        if (tag == "entry") {
-            switch (event) {
-            case TagEvent::START:
-                parse_entry(attrs_map.value());
-                break;
-            case TagEvent::END:
-                fin_entry();
-                break;
-            }
-            return;
-        }
-    }
+    };
 
     void
         start(std::string_view tag, const std::vector<Parser::Attribute> &attrs)
     {
-        dispatch_tag(TagEvent::START, tag, std::ref(attrs));
+        auto parsed_tag = parse_tag(tag);
+        if (!parsed_tag.has_value()) {
+            return;
+        }
+
+        StartTagVisitor vis{*this, make_attr_map(attrs)};
+        std::visit(vis, parsed_tag.value());
     }
 
     auto data([[maybe_unused]] std::string_view data) -> void
     {
     }
 
+    struct EndTagVisitor
+    {
+        WaylandProtoParser &parser;
+
+        void operator()(Tag::Interface)
+        {
+            parser.fin_interface();
+        }
+
+        void operator()(Tag::Request)
+        {
+            parser.fin_request();
+        }
+
+        void operator()(Tag::Event)
+        {
+            parser.fin_event();
+        }
+
+        void operator()(Tag::Arg)
+        {
+            parser.fin_arg();
+        }
+
+        void operator()(Tag::Enum)
+        {
+            parser.fin_enum();
+        }
+
+        void operator()(Tag::Entry)
+        {
+            parser.fin_entry();
+        }
+    };
+
     auto end(std::string_view tag) -> void
     {
-        dispatch_tag(TagEvent::END, tag);
+        auto parsed_tag = parse_tag(tag);
+        if (!parsed_tag.has_value()) {
+            return;
+        }
+
+        EndTagVisitor vis{*this};
+        std::visit(vis, parsed_tag.value());
     }
 
     auto get() const -> const std::vector<WaylandInterface> &
@@ -1066,7 +1079,6 @@ struct WaylandProtoParser
     }
 
     std::vector<WaylandInterface> interfaces;
-
     std::stack<ParseTarget> targets;
 };
 
