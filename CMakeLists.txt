@@ -61,7 +61,7 @@ list(APPEND HOST_APPLICATIONS
 )
 
 foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
-    set(TGT "${PREF}host_${HOST_APPLICATION}")
+    set(TGT "${PREF}${HOST_APPLICATION}")
     add_application(${TGT})
 endforeach()
 
@@ -75,7 +75,7 @@ if(${PREF}USE_PACKAGED_HOST_APPS)
     find_package(${HOST_APPS_EXPORT_NAME} REQUIRED)
 else()
     foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
-        set(TGT "${PREF}host_${HOST_APPLICATION}")
+        set(TGT "${PREF}${HOST_APPLICATION}")
         # set_target_properties(${TGT} PROPERTIES EXCLUDE_FROM_ALL ON) #TODO[CMake]: resolve host applications build policy
     endforeach()
     add_subdirectory(host EXCLUDE_FROM_ALL)

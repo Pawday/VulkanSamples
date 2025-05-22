@@ -1,11 +1,11 @@
 set(EXPORT_VERSION "0.0.0")
 
 
-application_sources(${PREF}host_TestHostApplication PRIVATE TestHostApplication.cc)
+application_sources(${PREF}TestHostApplication PRIVATE TestHostApplication.cc)
 
 
-application_sources(${PREF}host_WaylandScanner PRIVATE WaylandScanner.cc)
-application_link_libraries(${PREF}host_WaylandScanner
+application_sources(${PREF}WaylandScanner PRIVATE WaylandScanner.cc)
+application_link_libraries(${PREF}WaylandScanner
     PRIVATE
         ${PREF}expat.headers
     INTERFACE
@@ -25,7 +25,7 @@ write_basic_package_version_file(
 )
 
 foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
-    set(TGT "${PREF}host_${HOST_APPLICATION}")
+    set(TGT "${PREF}${HOST_APPLICATION}")
     install(TARGETS ${TGT} EXPORT ${HOST_APPS_EXPORT_NAME} DESTINATION "${HOST_APPS_EXPORT_NAME}-${EXPORT_VERSION}/bin/")
 endforeach()
 
