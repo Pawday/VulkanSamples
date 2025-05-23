@@ -1,10 +1,8 @@
 #include <format>
 #include <fstream>
 #include <iostream>
-#include <optional>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include <cstddef>
 #include <cstdlib>
@@ -15,7 +13,6 @@
 #include "Application.hh"
 
 #include "Format.hh"
-#include "Types.hh"
 #include "WaylandProtoParser.hh"
 
 int Application::main()
@@ -32,17 +29,7 @@ int Application::main()
         return content.str();
     }();
 
-    WaylandProtoParser ctx;
-    Parser::Callbacks<WaylandProtoParser> pcbs{
-        ctx,
-        &WaylandProtoParser::start,
-        &WaylandProtoParser::data,
-        &WaylandProtoParser::end};
-
-    Parser p;
-    p.parse(pcbs, protocol_xml);
-
-    std::vector<WaylandInterface> interfaces = ctx.get();
+    auto interfaces = parse_protocol(protocol_xml);
 
     std::cout << std::format("{}\n", FormatVectorWrap{interfaces});
 

@@ -767,3 +767,19 @@ struct WaylandProtoParser
     std::vector<WaylandInterface> interfaces;
     std::stack<ParseTarget> targets;
 };
+
+inline std::vector<WaylandInterface>
+    parse_protocol(std::string_view protocol_xml)
+{
+    WaylandProtoParser ctx;
+    Parser::Callbacks<WaylandProtoParser> pcbs{
+        ctx,
+        &WaylandProtoParser::start,
+        &WaylandProtoParser::data,
+        &WaylandProtoParser::end};
+
+    Parser p;
+    p.parse(pcbs, protocol_xml);
+
+    return ctx.get();
+}
