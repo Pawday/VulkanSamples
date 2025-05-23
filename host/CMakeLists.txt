@@ -1,17 +1,7 @@
 set(EXPORT_VERSION "0.0.0")
 
-
-application_sources(${PREF}TestHostApplication PRIVATE TestHostApplication.cc)
-
-
-application_sources(${PREF}WaylandScanner PRIVATE WaylandScanner.cc)
-application_link_libraries(${PREF}WaylandScanner
-    PRIVATE
-        ${PREF}expat.headers
-    INTERFACE
-        ${PREF}expat.static
-)
-
+add_subdirectory(TestHostApplication)
+add_subdirectory(WaylandScanner)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(Config.cmake.in
