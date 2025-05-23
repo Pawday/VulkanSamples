@@ -13,7 +13,7 @@
 #include "Application.hh"
 
 #include "Format.hh"
-#include "WaylandProtoParser.hh"
+#include "ParseProtocol.hh"
 
 int Application::main()
 {

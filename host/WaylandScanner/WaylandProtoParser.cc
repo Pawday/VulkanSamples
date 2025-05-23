@@ -1,5 +1,3 @@
-#pragma once
-
 #include <charconv>
 #include <expected>
 #include <format>
@@ -19,7 +17,10 @@
 #include <expat.h>
 #include <expat_external.h>
 
+#include "ParseProtocol.hh"
 #include "Types.hh"
+
+namespace {
 
 struct Parser
 {
@@ -768,8 +769,9 @@ struct WaylandProtoParser
     std::stack<ParseTarget> targets;
 };
 
-inline std::vector<WaylandInterface>
-    parse_protocol(std::string_view protocol_xml)
+} // namespace
+
+std::vector<WaylandInterface> parse_protocol(std::string_view protocol_xml)
 {
     WaylandProtoParser ctx;
     Parser::Callbacks<WaylandProtoParser> pcbs{
