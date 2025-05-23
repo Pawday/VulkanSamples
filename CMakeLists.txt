@@ -28,9 +28,7 @@ include(add_system_library)
 include(target_cxx23)
 include(target_strict_compilation)
 
-add_library(${PREF}CPPTraceLauncher STATIC CPPTraceLauncher.cc)
-target_link_libraries(${PREF}CPPTraceLauncher PRIVATE ${PREF}cpptrace.headers ${PREF}cpptrace.static)
-add_library(${PREF}Launcher ALIAS ${PREF}CPPTraceLauncher)
+add_subdirectory(launcher)
 
 function(add_application TARGET_NAME)
     set(LIBRARY_TARGET_NAME "${TARGET_NAME}.applib")
@@ -38,7 +36,7 @@ function(add_application TARGET_NAME)
 
     add_library(${LIBRARY_TARGET_NAME} STATIC ${ARGN})
     set_target_properties(${LIBRARY_TARGET_NAME} PROPERTIES EXCLUDE_FROM_ALL ON)
-    target_include_directories(${LIBRARY_TARGET_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(${LIBRARY_TARGET_NAME} PRIVATE ${PREF}Launcher.headers)
     target_cxx23(${LIBRARY_TARGET_NAME})
     target_strict_compilation(${LIBRARY_TARGET_NAME})
 
@@ -161,4 +159,3 @@ application_link_libraries(${PREF}DMABuf PRIVATE
 )
 
 add_application(${PREF}LauncherTest LauncherTest.cc)
-application_link_libraries(${PREF}LauncherTest PRIVATE ${PREF}CPPTraceLauncher)
