@@ -41,7 +41,8 @@ add_glsl_shader(${PREF}shaders.headers fragment.glsl frag)
 add_glsl_shader(${PREF}shaders.headers trsq_vertex.glsl vert)
 add_glsl_shader(${PREF}shaders.headers trsq_fragment.glsl frag)
 
+target_include_directories(${PREF}shaders.headers INTERFACE include)
+
 add_library(${PREF}shaders STATIC spans.cc)
-target_include_directories(${PREF}shaders PUBLIC include)
 target_link_libraries(${PREF}shaders PRIVATE ${PREF}shaders.headers)
 target_cxx23(${PREF}shaders)

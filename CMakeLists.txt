@@ -91,18 +91,26 @@ add_subdirectory(shaders)
 
 add_executable(${PREF}ICDLoadLeakTest ICDLoadLeakTest.c)
 
+
+add_library(${PREF}Common.headers INTERFACE)
+target_link_libraries(${PREF}Common.headers
+    INTERFACE
+        ${PREF}vulkan.headers
+        ${PREF}shaders.headers
+)
+
 add_library(${PREF}Common STATIC
     Messenger.cc
     SimpleVulkanObjects.cc
 )
 target_cxx23(${PREF}Common)
 target_strict_compilation(${PREF}Common)
-target_link_libraries(${PREF}Common PUBLIC
-    ${PREF}vulkan.headers
-    ${PREF}shaders
+target_link_libraries(${PREF}Common
+    PRIVATE
+        ${PREF}Common.headers
+        ${PREF}shaders
 )
-target_precompile_headers(${PREF}Common
-  PUBLIC
+target_precompile_headers(${PREF}Common.headers INTERFACE
     "<vulkan/vk_platform.h>"
     "<vulkan/vulkan.hpp>"
     "<vulkan/vulkan_enums.hpp>"
@@ -113,7 +121,7 @@ target_precompile_headers(${PREF}Common
 )
 
 add_application(${PREF}OffscreenDraw OffscreenDraw.cc)
-application_link_libraries(${PREF}OffscreenDraw PRIVATE ${PREF}Common)
+application_link_libraries(${PREF}OffscreenDraw PRIVATE ${PREF}Common.headers INTERFACE ${PREF}Common)
 
 if(NOT ${${PREF}WAYLAND_DYNAMIC})
     add_system_library(wayland-client)
@@ -128,20 +136,28 @@ endif()
 add_subdirectory(wayland)
 target_cxx23(${PREF}WaylandContext)
 target_strict_compilation(${PREF}WaylandContext)
-target_link_libraries(${PREF}WaylandContext PUBLIC
+target_link_libraries(${PREF}WaylandContext PRIVATE
     ${PREF}vulkan.headers
 )
 
 add_application(${PREF}WaylandSurface WaylandSurface.cc)
-application_link_libraries(${PREF}WaylandSurface PRIVATE
-    ${PREF}Common
-    ${PREF}WaylandContext
+application_link_libraries(${PREF}WaylandSurface
+    PRIVATE
+        ${PREF}Common.headers
+        ${PREF}WaylandContext.headers
+    INTERFACE
+        ${PREF}WaylandContext
+        ${PREF}Common
 )
 
 add_application(${PREF}DMABuf DMABuf.cc)
 application_link_libraries(${PREF}DMABuf PRIVATE
-    ${PREF}Common
-    ${PREF}WaylandContext
+    PRIVATE
+        ${PREF}Common.headers
+        ${PREF}WaylandContext.headers
+    INTERFACE
+        ${PREF}WaylandContext
+        ${PREF}Common
 )
 
 add_application(${PREF}LauncherTest LauncherTest.cc)
