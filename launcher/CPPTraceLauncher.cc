@@ -1,13 +1,11 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
-#include <chrono>
 #include <exception>
 #include <iostream>
 #include <iterator>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <thread>
 #include <utility>
@@ -25,6 +23,7 @@
 #include <cpptrace/from_current.hpp>
 
 #include "Application.hh"
+#include "WrapLibcArgs.hh"
 
 using namespace std::chrono_literals;
 
@@ -219,19 +218,7 @@ int main(int argc, char *argv[], char *envp[]) CPPTRACE_TRY
         return EXIT_FAILURE;
     }
 
-    auto create_args = [&]() -> Application::LibcArgs {
-        Application::LibcArgs args{};
-        for (size_t argidx = 0; argidx != argc; ++argidx) {
-            args.argv.push_back(argv[argidx]);
-        }
-        while (*envp != nullptr) {
-            args.env.push_back(*envp);
-            envp++;
-        }
-        return args;
-    };
-
-    Application app{CPPTraceApplication{create_args()}};
+    Application app{CPPTraceApplication{wrap_args(argc, argv, envp)}};
 
     CPPTRACE_TRY
     {
