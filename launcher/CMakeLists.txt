@@ -5,8 +5,11 @@ add_library(${PREF}Launcher STATIC)
 target_link_libraries(${PREF}Launcher
     PRIVATE
         ${PREF}Launcher.headers
-        ${PREF}cpptrace.headers
-        ${PREF}cpptrace.static
 )
 
 target_sources(${PREF}Launcher PRIVATE CPPTraceLauncher.cc)
+target_link_libraries(${PREF}Launcher
+    PRIVATE
+        ${PREF}cpptrace.headers
+        ${PREF}cpptrace.static
+)
