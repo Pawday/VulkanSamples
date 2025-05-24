@@ -19,6 +19,7 @@
 #include <cpptrace/basic.hpp>
 #include <cpptrace/cpptrace.hpp>
 #include <cpptrace/exceptions.hpp>
+#include <cpptrace/formatting.hpp>
 #include <cpptrace/forward.hpp>
 #include <cpptrace/from_current.hpp>
 
@@ -32,8 +33,10 @@ static constexpr size_t signal_stacktrace_max_frames = 1024;
 namespace {
 void print_trace(const cpptrace::raw_trace &trace)
 {
-    auto res = trace.resolve();
-    res.print_with_snippets();
+    cpptrace::formatter f{};
+    f.addresses(cpptrace::formatter::address_mode::object);
+    f.snippets(true);
+    f.print(trace.resolve());
 }
 }; // namespace
 
