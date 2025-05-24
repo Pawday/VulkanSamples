@@ -7,6 +7,7 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <utility>
@@ -148,8 +149,9 @@ void launcher_fill_signal_stacktrace_and_trap(int signo)
         signal_watcher_trap();
     }
     sigtrace_size = cpptrace::safe_generate_raw_trace(
-        sigtrace_buffer.data(), sigtrace_buffer.size(), 0);
+        sigtrace_buffer.data(), sigtrace_buffer.size());
     signal_value = signo;
+    static_assert(decltype(has_trace)::is_always_lock_free);
     has_trace = true;
     signal_watcher_trap();
 }
