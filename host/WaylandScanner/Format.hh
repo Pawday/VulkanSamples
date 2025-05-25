@@ -162,26 +162,26 @@ struct std::formatter<Wayland::ScannerTypes::Enum> : FormatterNoParseArgs
 template <>
 struct std::formatter<Wayland::ScannerTypes::Message> : FormatterNoParseArgs
 {
+    template <typename FmtContext>
+    struct MessageTypenameVisitor
+    {
+        FmtContext &_ctx;
+
+        void operator()(const Wayland::ScannerTypes::Message::TypeDestructor &)
+        {
+            std::format_to(_ctx.out(), "\"type\":\"DESTRUCTOR\"");
+        }
+    };
+
     template <class FmtContext>
     FmtContext::iterator
         format(const Wayland::ScannerTypes::Message &s, FmtContext &ctx) const
     {
-
-        auto to_string =
-            [](Wayland::ScannerTypes::Message::Type t) -> const char * {
-            switch (t) {
-            case Wayland::ScannerTypes::Message::Type::DESTRUCTOR:
-                return "DESTRUCTOR";
-            }
-            return "?";
-        };
-
         std::format_to(ctx.out(), "{{");
         std::format_to(ctx.out(), "\"name\":\"{}\"", s.name);
         if (s.type) {
             std::format_to(ctx.out(), ",");
-            std::format_to(
-                ctx.out(), "\"type\":\"{}\"", to_string(s.type.value()));
+            std::visit(MessageTypenameVisitor{ctx}, s.type.value());
         }
         FormatVectorWrap<Wayland::ScannerTypes::Arg> arg_fmt{s.args};
         std::format_to(ctx.out(), ",");

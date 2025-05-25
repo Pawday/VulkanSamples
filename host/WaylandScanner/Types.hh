@@ -63,10 +63,13 @@ struct Enum
 
 struct Message
 {
-    enum class Type
-    {
-        DESTRUCTOR
-    };
+    // clang-format off
+    struct TypeDestructor {};
+
+    using Type = std::variant<
+        TypeDestructor
+    >;
+    // clang-format on
 
     std::string name;
     std::string description;

@@ -227,7 +227,7 @@ struct ProtoParser
         if (attrs.contains("type")) {
             std::string type_string = attrs.at("type");
             if (type_string == "destructor") {
-                new_request.type = ScannerTypes::Request::Type::DESTRUCTOR;
+                new_request.type = ScannerTypes::Request::TypeDestructor{};
             } else {
                 std::string message =
                     std::format("Unknown request type [{}]", type_string);
