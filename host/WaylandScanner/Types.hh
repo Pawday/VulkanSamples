@@ -50,11 +50,9 @@ struct Arg
 struct Enum
 {
     std::string name;
-    std::string description;
     struct Entry
     {
         std::string name;
-        std::string summary;
         uint32_t value;
         bool is_hex;
     };
@@ -72,9 +70,7 @@ struct Message
     // clang-format on
 
     std::string name;
-    std::string description;
     std::optional<Type> type;
-    std::string summary;
     std::vector<Arg> args;
 };
 
@@ -87,7 +83,6 @@ struct Interface
 {
     std::string name;
     uint32_t verison;
-    std::string description;
     std::vector<Request> requests;
     std::vector<Event> events;
     std::vector<Enum> enums;
