@@ -1,6 +1,9 @@
 #pragma once
 
 #include <format>
+#include <optional>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "Types.hh"
@@ -85,9 +88,39 @@ struct std::formatter<Wayland::ScannerTypes::ArgType> : FormatterNoParseArgs
         ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeFixed, "fixed")
         ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeString, "string")
         ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeNullString, "?str")
-        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeObject, "obj")
-        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeNullObject, "?obj")
-        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeNewID, "id")
+
+        auto format_with_interface(
+            const std::string_view name,
+            const std::optional<std::string> &interface_name)
+            -> FmtContext ::iterator
+
+        {
+            std::format_to(_ctx.out(), "{{");
+            std ::format_to(_ctx.out(), "\"name\":\"{}\"", name);
+            if (interface_name.has_value()) {
+                std::format_to(_ctx.out(), ",");
+                std::format_to(
+                    _ctx.out(), "\"interface\":\"{}\"", interface_name.value());
+            }
+            std::format_to(_ctx.out(), "}}");
+            return _ctx.out();
+        }
+
+        auto operator()(const Wayland::ScannerTypes::ArgTypeObject &o)
+            -> FmtContext ::iterator
+        {
+            return format_with_interface("obj", o.interface_name);
+        }
+        auto operator()(const Wayland::ScannerTypes::ArgTypeNullObject &o)
+            -> FmtContext ::iterator
+        {
+            return format_with_interface("?obj", o.interface_name);
+        }
+        auto operator()(const Wayland::ScannerTypes::ArgTypeNewID &i)
+            -> FmtContext ::iterator
+        {
+            return format_with_interface("id", i.interface_name);
+        }
         ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeArray, "arr")
         ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeFD, "fd")
 #undef ADD_OVERLOAD

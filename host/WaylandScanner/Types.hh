@@ -9,20 +9,24 @@
 namespace Wayland {
 namespace ScannerTypes {
 
+struct InterfaceNameable
+{
+    std::optional<std::string> interface_name;
+};
+
 // clang-format off
 struct ArgTypeInt {};
 struct ArgTypeUInt {};
-struct ArgTypeUIntEnum
+struct ArgTypeUIntEnum : InterfaceNameable
 {
-    std::optional<std::string> interface_name;
     std::string name;
 };
 struct ArgTypeFixed {};
 struct ArgTypeString {};
 struct ArgTypeNullString {};
-struct ArgTypeObject {};
-struct ArgTypeNullObject {};
-struct ArgTypeNewID {};
+struct ArgTypeObject : InterfaceNameable {};
+struct ArgTypeNullObject : InterfaceNameable {};
+struct ArgTypeNewID : InterfaceNameable {};
 struct ArgTypeArray {};
 struct ArgTypeFD {};
 

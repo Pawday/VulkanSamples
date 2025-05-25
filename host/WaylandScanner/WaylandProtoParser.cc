@@ -322,6 +322,13 @@ struct ProtoParser
         -> std::expected<ScannerTypes::ArgType, std::string>
     {
 
+        const auto interface_name = [&attrs]() -> std::optional<std::string> {
+            if (attrs.contains("interface")) {
+                return attrs.at("interface");
+            }
+            return std::nullopt;
+        }();
+
         /*
          * * * `i`: int
          * * `u`: uint
@@ -416,8 +423,12 @@ struct ProtoParser
                 out_t = ScannerTypes::ArgTypeString{};
                 null_out_t = ScannerTypes::ArgTypeNullString{};
             } else if (arg_type_string == "object") {
-                out_t = ScannerTypes::ArgTypeObject{};
-                null_out_t = ScannerTypes::ArgTypeNullObject{};
+                ScannerTypes::ArgTypeObject obj{};
+                obj.interface_name = interface_name;
+                out_t = std::move(obj);
+                ScannerTypes::ArgTypeNullObject null_obj{};
+                null_obj.interface_name = interface_name;
+                null_out_t = std::move(null_obj);
             } else {
                 std::string message = std::format(
                     "Unexpected arg_type_string value change from"
@@ -443,7 +454,9 @@ struct ProtoParser
         }
 
         if (arg_type_string == "new_id") {
-            return ScannerTypes::ArgTypeNewID{};
+            ScannerTypes::ArgTypeNewID new_id{};
+            new_id.interface_name = interface_name;
+            return new_id;
         }
 
         if (arg_type_string == "array") {
