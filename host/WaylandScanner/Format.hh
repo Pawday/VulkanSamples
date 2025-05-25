@@ -46,7 +46,7 @@ struct std::formatter<FormatVectorWrap<T>> : FormatterNoParseArgs
 };
 
 template <>
-struct std::formatter<WaylandArgType> : FormatterNoParseArgs
+struct std::formatter<Wayland::ScannerTypes::ArgType> : FormatterNoParseArgs
 {
     template <typename FmtContext>
     struct WaylandArgTypeNameVisitor
@@ -61,10 +61,11 @@ struct std::formatter<WaylandArgType> : FormatterNoParseArgs
         return _ctx.out();                                                     \
     }
 
-        ADD_OVERLOAD(WaylandArgTypeInt, "int")
-        ADD_OVERLOAD(WaylandArgTypeUInt, "uint")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeInt, "int")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeUInt, "uint")
 
-        auto operator()(const WaylandArgTypeUIntEnum &v) -> FmtContext::iterator
+        auto operator()(const Wayland::ScannerTypes::ArgTypeUIntEnum &v)
+            -> FmtContext::iterator
         {
             std::format_to(_ctx.out(), "{{");
             std::format_to(_ctx.out(), "\"name\":\"enum\"");
@@ -81,14 +82,14 @@ struct std::formatter<WaylandArgType> : FormatterNoParseArgs
             return _ctx.out();
         }
 
-        ADD_OVERLOAD(WaylandArgTypeFixed, "fixed")
-        ADD_OVERLOAD(WaylandArgTypeString, "string")
-        ADD_OVERLOAD(WaylandArgTypeNullString, "?str")
-        ADD_OVERLOAD(WaylandArgTypeObject, "obj")
-        ADD_OVERLOAD(WaylandArgTypeNullObject, "?obj")
-        ADD_OVERLOAD(WaylandArgTypeNewID, "id")
-        ADD_OVERLOAD(WaylandArgTypeArray, "arr")
-        ADD_OVERLOAD(WaylandArgTypeFD, "fd")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeFixed, "fixed")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeString, "string")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeNullString, "?str")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeObject, "obj")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeNullObject, "?obj")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeNewID, "id")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeArray, "arr")
+        ADD_OVERLOAD(Wayland::ScannerTypes::ArgTypeFD, "fd")
 #undef ADD_OVERLOAD
 
       private:
@@ -96,8 +97,8 @@ struct std::formatter<WaylandArgType> : FormatterNoParseArgs
     };
 
     template <class FmtContext>
-    FmtContext::iterator
-        format(const WaylandArgType &type, FmtContext &ctx) const
+    FmtContext::iterator format(
+        const Wayland::ScannerTypes::ArgType &type, FmtContext &ctx) const
     {
         WaylandArgTypeNameVisitor vis{ctx};
         return std::visit(vis, type);
@@ -105,10 +106,11 @@ struct std::formatter<WaylandArgType> : FormatterNoParseArgs
 };
 
 template <>
-struct std::formatter<WaylandArg> : FormatterNoParseArgs
+struct std::formatter<Wayland::ScannerTypes::Arg> : FormatterNoParseArgs
 {
     template <class FmtContext>
-    FmtContext::iterator format(const WaylandArg &s, FmtContext &ctx) const
+    FmtContext::iterator
+        format(const Wayland::ScannerTypes::Arg &s, FmtContext &ctx) const
     {
         std::format_to(ctx.out(), "{{");
         std::format_to(ctx.out(), "\"name\":\"{}\"", s.name);
@@ -120,11 +122,11 @@ struct std::formatter<WaylandArg> : FormatterNoParseArgs
 };
 
 template <>
-struct std::formatter<WaylandEnum::Entry> : FormatterNoParseArgs
+struct std::formatter<Wayland::ScannerTypes::Enum::Entry> : FormatterNoParseArgs
 {
     template <class FmtContext>
-    FmtContext::iterator
-        format(const WaylandEnum::Entry &entry, FmtContext &ctx) const
+    FmtContext::iterator format(
+        const Wayland::ScannerTypes::Enum::Entry &entry, FmtContext &ctx) const
     {
         std::format_to(ctx.out(), "{{");
         std::format_to(ctx.out(), "\"name\":\"{}\"", entry.name);
@@ -140,12 +142,14 @@ struct std::formatter<WaylandEnum::Entry> : FormatterNoParseArgs
 };
 
 template <>
-struct std::formatter<WaylandEnum> : FormatterNoParseArgs
+struct std::formatter<Wayland::ScannerTypes::Enum> : FormatterNoParseArgs
 {
     template <class FmtContext>
-    FmtContext::iterator format(const WaylandEnum &s, FmtContext &ctx) const
+    FmtContext::iterator
+        format(const Wayland::ScannerTypes::Enum &s, FmtContext &ctx) const
     {
-        FormatVectorWrap<WaylandEnum::Entry> fmt_entries(s.entries);
+        FormatVectorWrap<Wayland::ScannerTypes::Enum::Entry> fmt_entries(
+            s.entries);
         std::format_to(
             ctx.out(),
             "{{\"name\":\"{}\",\"entries\":{}}}",
@@ -155,21 +159,23 @@ struct std::formatter<WaylandEnum> : FormatterNoParseArgs
     }
 };
 
-const char *to_string(WaylandMessage::Type t)
-{
-    switch (t) {
-    case WaylandMessage::Type::DESTRUCTOR:
-        return "DESTRUCTOR";
-    }
-    return "?";
-}
-
 template <>
-struct std::formatter<WaylandMessage> : FormatterNoParseArgs
+struct std::formatter<Wayland::ScannerTypes::Message> : FormatterNoParseArgs
 {
     template <class FmtContext>
-    FmtContext::iterator format(const WaylandMessage &s, FmtContext &ctx) const
+    FmtContext::iterator
+        format(const Wayland::ScannerTypes::Message &s, FmtContext &ctx) const
     {
+
+        auto to_string =
+            [](Wayland::ScannerTypes::Message::Type t) -> const char * {
+            switch (t) {
+            case Wayland::ScannerTypes::Message::Type::DESTRUCTOR:
+                return "DESTRUCTOR";
+            }
+            return "?";
+        };
+
         std::format_to(ctx.out(), "{{");
         std::format_to(ctx.out(), "\"name\":\"{}\"", s.name);
         if (s.type) {
@@ -177,7 +183,7 @@ struct std::formatter<WaylandMessage> : FormatterNoParseArgs
             std::format_to(
                 ctx.out(), "\"type\":\"{}\"", to_string(s.type.value()));
         }
-        FormatVectorWrap<WaylandArg> arg_fmt{s.args};
+        FormatVectorWrap<Wayland::ScannerTypes::Arg> arg_fmt{s.args};
         std::format_to(ctx.out(), ",");
         std::format_to(ctx.out(), "\"args\":{}", arg_fmt);
         std::format_to(ctx.out(), "}}");
@@ -186,45 +192,54 @@ struct std::formatter<WaylandMessage> : FormatterNoParseArgs
 };
 
 template <>
-struct std::formatter<WaylandRequest> : FormatterNoParseArgs
-{
-    template <class FmtContext>
-    FmtContext::iterator format(const WaylandRequest &s, FmtContext &ctx) const
-    {
-        std::format_to(ctx.out(), "{}", static_cast<const WaylandMessage &>(s));
-        return ctx.out();
-    }
-};
-
-template <>
-struct std::formatter<WaylandEvent> : FormatterNoParseArgs
-{
-    template <class FmtContext>
-    FmtContext::iterator format(const WaylandEvent &s, FmtContext &ctx) const
-    {
-        std::format_to(ctx.out(), "{}", static_cast<const WaylandMessage &>(s));
-        return ctx.out();
-    }
-};
-
-template <>
-struct std::formatter<WaylandInterface> : FormatterNoParseArgs
+struct std::formatter<Wayland::ScannerTypes::Request> : FormatterNoParseArgs
 {
     template <class FmtContext>
     FmtContext::iterator
-        format(const WaylandInterface &i, FmtContext &ctx) const
+        format(const Wayland::ScannerTypes::Request &s, FmtContext &ctx) const
+    {
+        std::format_to(
+            ctx.out(),
+            "{}",
+            static_cast<const Wayland::ScannerTypes::Message &>(s));
+        return ctx.out();
+    }
+};
+
+template <>
+struct std::formatter<Wayland::ScannerTypes::Event> : FormatterNoParseArgs
+{
+    template <class FmtContext>
+    FmtContext::iterator
+        format(const Wayland::ScannerTypes::Event &s, FmtContext &ctx) const
+    {
+        std::format_to(
+            ctx.out(),
+            "{}",
+            static_cast<const Wayland::ScannerTypes::Message &>(s));
+        return ctx.out();
+    }
+};
+
+template <>
+struct std::formatter<Wayland::ScannerTypes::Interface> : FormatterNoParseArgs
+{
+    template <class FmtContext>
+    FmtContext::iterator
+        format(const Wayland::ScannerTypes::Interface &i, FmtContext &ctx) const
     {
         std::format_to(ctx.out(), "{{");
         std::format_to(ctx.out(), "\"name\":\"{}\"", i.name);
         std::format_to(ctx.out(), ",");
         std::format_to(ctx.out(), "\"version\":{}", i.verison);
-        FormatVectorWrap<WaylandRequest> request_fmt{i.requests};
+        FormatVectorWrap<Wayland::ScannerTypes::Request> request_fmt{
+            i.requests};
         std::format_to(ctx.out(), ",");
         std::format_to(ctx.out(), "\"requests\":{}", request_fmt);
-        FormatVectorWrap<WaylandEvent> event_fmt{i.events};
+        FormatVectorWrap<Wayland::ScannerTypes::Event> event_fmt{i.events};
         std::format_to(ctx.out(), ",");
         std::format_to(ctx.out(), "\"events\":{}", event_fmt);
-        FormatVectorWrap<WaylandEnum> enums_fmt{i.enums};
+        FormatVectorWrap<Wayland::ScannerTypes::Enum> enums_fmt{i.enums};
         std::format_to(ctx.out(), ",");
         std::format_to(ctx.out(), "\"enums\":{}", enums_fmt);
         std::format_to(ctx.out(), "}}");

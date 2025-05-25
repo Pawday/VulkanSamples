@@ -29,7 +29,7 @@ int Application::main()
         return content.str();
     }();
 
-    auto interfaces = parse_protocol(protocol_xml);
+    auto interfaces = Wayland::parse_protocol(protocol_xml);
 
     std::cout << std::format("{}\n", FormatVectorWrap{interfaces});
 

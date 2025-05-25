@@ -20,6 +20,8 @@
 #include "ParseProtocol.hh"
 #include "Types.hh"
 
+namespace Wayland {
+
 namespace {
 
 struct Parser
@@ -115,17 +117,17 @@ struct Parser
     XML_Parser handle = nullptr;
 };
 
-struct WaylandProtoParser
+struct ProtoParser
 {
     // clang-format off
     using ParseTarget = std::variant<
-        WaylandArg,
-        WaylandEnum,
-        WaylandEnum::Entry,
-        WaylandMessage,
-        WaylandRequest,
-        WaylandEvent,
-        WaylandInterface
+        ScannerTypes::Arg,
+        ScannerTypes::Enum,
+        ScannerTypes::Enum::Entry,
+        ScannerTypes::Message,
+        ScannerTypes::Request,
+        ScannerTypes::Event,
+        ScannerTypes::Interface
     >;
     // clang-format on
 
@@ -177,14 +179,14 @@ struct WaylandProtoParser
 
     auto parse_interface(const AttributeMap &attrs) -> void
     {
-        WaylandInterface new_interface{};
+        ScannerTypes::Interface new_interface{};
 
         std::string name = attrs.at("name");
         new_interface.name = std::move(name);
         std::string vesion_string = attrs.at("version");
 
-        auto version_op =
-            parse_num<decltype(WaylandInterface::verison)>(vesion_string);
+        auto version_op = parse_num<decltype(ScannerTypes::Interface::verison)>(
+            vesion_string);
 
         std::optional<std::string> error_string{};
         if (!version_op.has_value()) {
@@ -210,8 +212,8 @@ struct WaylandProtoParser
     auto fin_interface() -> void
     {
         ParseTarget &active_target = targets.top();
-        WaylandInterface &active_interface =
-            std::get<WaylandInterface>(active_target);
+        ScannerTypes::Interface &active_interface =
+            std::get<ScannerTypes::Interface>(active_target);
 
         interfaces.emplace_back(std::move(active_interface));
         targets.pop();
@@ -219,13 +221,13 @@ struct WaylandProtoParser
 
     auto parse_request(const AttributeMap &attrs) -> void
     {
-        WaylandRequest new_request;
+        ScannerTypes::Request new_request;
         std::string request_name = attrs.at("name");
 
         if (attrs.contains("type")) {
             std::string type_string = attrs.at("type");
             if (type_string == "destructor") {
-                new_request.type = WaylandRequest::Type::DESTRUCTOR;
+                new_request.type = ScannerTypes::Request::Type::DESTRUCTOR;
             } else {
                 std::string message =
                     std::format("Unknown request type [{}]", type_string);
@@ -239,7 +241,7 @@ struct WaylandProtoParser
 
     struct FinRequestVisitor
     {
-        explicit FinRequestVisitor(WaylandRequest &req) : _req(req)
+        explicit FinRequestVisitor(ScannerTypes::Request &req) : _req(req)
         {
         }
 
@@ -251,20 +253,20 @@ struct WaylandProtoParser
             throw std::runtime_error(std::move(message));
         }
 
-        void operator()(WaylandInterface &interface)
+        void operator()(ScannerTypes::Interface &interface)
         {
             interface.requests.emplace_back(std::move(_req));
         }
 
       private:
-        WaylandRequest &_req;
+        ScannerTypes::Request &_req;
     };
 
     auto fin_request() -> void
     {
         ParseTarget &active_target = targets.top();
-        WaylandRequest request =
-            std::move(std::get<WaylandRequest>(active_target));
+        ScannerTypes::Request request =
+            std::move(std::get<ScannerTypes::Request>(active_target));
         targets.pop();
 
         ParseTarget &request_parent_target = targets.top();
@@ -273,7 +275,7 @@ struct WaylandProtoParser
 
     auto parse_event(const AttributeMap &attrs) -> void
     {
-        WaylandEvent new_event;
+        ScannerTypes::Event new_event;
         std::string event_name = attrs.at("name");
 
         new_event.name = std::move(event_name);
@@ -282,7 +284,7 @@ struct WaylandProtoParser
 
     struct FinEventVisitor
     {
-        explicit FinEventVisitor(WaylandEvent &ev) : _ev(ev)
+        explicit FinEventVisitor(ScannerTypes::Event &ev) : _ev(ev)
         {
         }
 
@@ -294,19 +296,20 @@ struct WaylandProtoParser
             throw std::runtime_error(std::move(message));
         }
 
-        void operator()(WaylandInterface &interface)
+        void operator()(ScannerTypes::Interface &interface)
         {
             interface.events.emplace_back(std::move(_ev));
         }
 
       private:
-        WaylandEvent &_ev;
+        ScannerTypes::Event &_ev;
     };
 
     auto fin_event() -> void
     {
         ParseTarget &active_target = targets.top();
-        WaylandEvent event = std::move(std::get<WaylandEvent>(active_target));
+        ScannerTypes::Event event =
+            std::move(std::get<ScannerTypes::Event>(active_target));
         targets.pop();
 
         ParseTarget &request_parent_target = targets.top();
@@ -316,7 +319,7 @@ struct WaylandProtoParser
     auto parse_arg_type(
         [[maybe_unused]] const std::string &arg_type_string,
         [[maybe_unused]] const AttributeMap &attrs)
-        -> std::expected<WaylandArgType, std::string>
+        -> std::expected<ScannerTypes::ArgType, std::string>
     {
 
         /*
@@ -332,13 +335,13 @@ struct WaylandProtoParser
          */
 
         if (arg_type_string == "int") {
-            return WaylandArgTypeInt{};
+            return ScannerTypes::ArgTypeInt{};
         }
 
         if (arg_type_string == "uint") {
 
             if (!attrs.contains("enum")) {
-                return WaylandArgTypeUInt{};
+                return ScannerTypes::ArgTypeUInt{};
             }
 
             /*
@@ -352,7 +355,7 @@ struct WaylandProtoParser
                 enum_location.find(".") != enum_location.npos;
 
             if (!has_interface_name) {
-                WaylandArgTypeUIntEnum out{};
+                ScannerTypes::ArgTypeUIntEnum out{};
                 out.name = std::move(enum_location);
                 return out;
             }
@@ -394,27 +397,27 @@ struct WaylandProtoParser
             }
             auto &sep = sep_op.value();
 
-            WaylandArgTypeUIntEnum out{};
+            ScannerTypes::ArgTypeUIntEnum out{};
             out.interface_name = std::move(sep.first);
             out.name = std::move(sep.second);
             return out;
         }
 
         if (arg_type_string == "fixed") {
-            return WaylandArgTypeFixed{};
+            return ScannerTypes::ArgTypeFixed{};
         }
 
         if (arg_type_string == "string" || arg_type_string == "object") {
 
-            WaylandArgType out_t;
-            WaylandArgType null_out_t;
+            ScannerTypes::ArgType out_t;
+            ScannerTypes::ArgType null_out_t;
 
             if (arg_type_string == "string") {
-                out_t = WaylandArgTypeString{};
-                null_out_t = WaylandArgTypeNullString{};
+                out_t = ScannerTypes::ArgTypeString{};
+                null_out_t = ScannerTypes::ArgTypeNullString{};
             } else if (arg_type_string == "object") {
-                out_t = WaylandArgTypeObject{};
-                null_out_t = WaylandArgTypeNullObject{};
+                out_t = ScannerTypes::ArgTypeObject{};
+                null_out_t = ScannerTypes::ArgTypeNullObject{};
             } else {
                 std::string message = std::format(
                     "Unexpected arg_type_string value change from"
@@ -440,15 +443,15 @@ struct WaylandProtoParser
         }
 
         if (arg_type_string == "new_id") {
-            return WaylandArgTypeNewID{};
+            return ScannerTypes::ArgTypeNewID{};
         }
 
         if (arg_type_string == "array") {
-            return WaylandArgTypeArray{};
+            return ScannerTypes::ArgTypeArray{};
         }
 
         if (arg_type_string == "fd") {
-            return WaylandArgTypeFD{};
+            return ScannerTypes::ArgTypeFD{};
         }
 
         return std::unexpected(
@@ -457,7 +460,7 @@ struct WaylandProtoParser
 
     auto parse_arg(const AttributeMap &attrs)
     {
-        WaylandArg arg;
+        ScannerTypes::Arg arg;
         std::string name = attrs.at("name");
         arg.name = std::move(name);
 
@@ -477,7 +480,7 @@ struct WaylandProtoParser
 
     struct FinArgVisitor
     {
-        explicit FinArgVisitor(WaylandArg &arg) : _arg{arg}
+        explicit FinArgVisitor(ScannerTypes::Arg &arg) : _arg{arg}
         {
         }
 
@@ -489,24 +492,25 @@ struct WaylandProtoParser
             throw std::runtime_error(std::move(message));
         }
 
-        void operator()(WaylandRequest &req)
+        void operator()(ScannerTypes::Request &req)
         {
             req.args.emplace_back(std::move(_arg));
         }
 
-        void operator()(WaylandEvent &event)
+        void operator()(ScannerTypes::Event &event)
         {
             event.args.emplace_back(std::move(_arg));
         }
 
       private:
-        WaylandArg &_arg;
+        ScannerTypes::Arg &_arg;
     };
 
     auto fin_arg()
     {
         ParseTarget &active_target = targets.top();
-        WaylandArg arg_target = std::move(std::get<WaylandArg>(active_target));
+        ScannerTypes::Arg arg_target =
+            std::move(std::get<ScannerTypes::Arg>(active_target));
         targets.pop();
 
         ParseTarget &request_parent_target = targets.top();
@@ -515,7 +519,7 @@ struct WaylandProtoParser
 
     auto parse_enum(const AttributeMap &attrs)
     {
-        WaylandEnum new_enum{};
+        ScannerTypes::Enum new_enum{};
         if (!attrs.contains("name")) {
 
             std::string message = "Found unnamed enum tag";
@@ -532,20 +536,20 @@ struct WaylandProtoParser
     void fin_enum()
     {
         ParseTarget &active_target = targets.top();
-        WaylandEnum enum_target =
-            std::move(std::get<WaylandEnum>(active_target));
+        ScannerTypes::Enum enum_target =
+            std::move(std::get<ScannerTypes::Enum>(active_target));
         targets.pop();
 
         ParseTarget &interface_parent_target = targets.top();
-        WaylandInterface &interface =
-            std::get<WaylandInterface>(interface_parent_target);
+        ScannerTypes::Interface &interface =
+            std::get<ScannerTypes::Interface>(interface_parent_target);
 
         interface.enums.emplace_back(std::move(enum_target));
     }
 
     auto parse_entry(const AttributeMap &attrs)
     {
-        WaylandEnum::Entry entry{};
+        ScannerTypes::Enum::Entry entry{};
 
         std::string name = attrs.at("name");
         std::string value_string = attrs.at("value");
@@ -561,8 +565,8 @@ struct WaylandProtoParser
             value_string = value_string.substr(2);
         }
 
-        auto value_op =
-            parse_num<decltype(WaylandEnum::Entry::value)>(value_string, base);
+        auto value_op = parse_num<decltype(ScannerTypes::Enum::Entry::value)>(
+            value_string, base);
 
         std::optional<std::string> error_string{};
         if (!value_op.has_value()) {
@@ -590,12 +594,12 @@ struct WaylandProtoParser
     auto fin_entry()
     {
         ParseTarget &active_target = targets.top();
-        WaylandEnum::Entry entry =
-            std::move(std::get<WaylandEnum::Entry>(active_target));
+        ScannerTypes::Enum::Entry entry =
+            std::move(std::get<ScannerTypes::Enum::Entry>(active_target));
         targets.pop();
 
         ParseTarget &enum_target = targets.top();
-        WaylandEnum &wl_enum = std::get<WaylandEnum>(enum_target);
+        ScannerTypes::Enum &wl_enum = std::get<ScannerTypes::Enum>(enum_target);
 
         wl_enum.entries.emplace_back(std::move(entry));
     }
@@ -637,7 +641,7 @@ struct WaylandProtoParser
 
     struct StartTagVisitor
     {
-        WaylandProtoParser &P;
+        ProtoParser &P;
         AttributeMap attr_map;
 
         void operator()(Tag::Interface)
@@ -689,7 +693,7 @@ struct WaylandProtoParser
 
     struct EndTagVisitor
     {
-        WaylandProtoParser &parser;
+        ProtoParser &parser;
 
         void operator()(Tag::Interface)
         {
@@ -733,7 +737,7 @@ struct WaylandProtoParser
         std::visit(vis, parsed_tag.value());
     }
 
-    auto get() const -> const std::vector<WaylandInterface> &
+    auto get() const -> const std::vector<ScannerTypes::Interface> &
     {
         return interfaces;
     };
@@ -750,13 +754,13 @@ struct WaylandProtoParser
             #TAG_NAME,                                                         \
             tgt.name);                                                         \
     }
-        ADD_OVERLOAD(WaylandArg, arg)
-        ADD_OVERLOAD(WaylandEnum, enum)
-        ADD_OVERLOAD(WaylandEnum::Entry, entry)
-        ADD_OVERLOAD(WaylandMessage, event | request)
-        ADD_OVERLOAD(WaylandRequest, request)
-        ADD_OVERLOAD(WaylandEvent, event)
-        ADD_OVERLOAD(WaylandInterface, interface)
+        ADD_OVERLOAD(ScannerTypes::Arg, arg)
+        ADD_OVERLOAD(ScannerTypes::Enum, enum)
+        ADD_OVERLOAD(ScannerTypes::Enum::Entry, entry)
+        ADD_OVERLOAD(ScannerTypes::Message, event | request)
+        ADD_OVERLOAD(ScannerTypes::Request, request)
+        ADD_OVERLOAD(ScannerTypes::Event, event)
+        ADD_OVERLOAD(ScannerTypes::Interface, interface)
 #undef ADD_OVERLOAD
     };
 
@@ -765,23 +769,23 @@ struct WaylandProtoParser
         return std::visit(ParseTargetNameVisitor{}, tgt);
     }
 
-    std::vector<WaylandInterface> interfaces;
+    std::vector<ScannerTypes::Interface> interfaces;
     std::stack<ParseTarget> targets;
 };
 
 } // namespace
 
-std::vector<WaylandInterface> parse_protocol(std::string_view protocol_xml)
+std::vector<ScannerTypes::Interface>
+    parse_protocol(std::string_view protocol_xml)
 {
-    WaylandProtoParser ctx;
-    Parser::Callbacks<WaylandProtoParser> pcbs{
-        ctx,
-        &WaylandProtoParser::start,
-        &WaylandProtoParser::data,
-        &WaylandProtoParser::end};
+    ProtoParser ctx;
+    Parser::Callbacks<ProtoParser> pcbs{
+        ctx, &ProtoParser::start, &ProtoParser::data, &ProtoParser::end};
 
     Parser p;
     p.parse(pcbs, protocol_xml);
 
     return ctx.get();
 }
+
+} // namespace Wayland

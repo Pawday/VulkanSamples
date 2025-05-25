@@ -5,4 +5,8 @@
 
 #include "Types.hh"
 
-std::vector<WaylandInterface> parse_protocol(std::string_view protocol_xml);
+namespace Wayland {
+
+std::vector<ScannerTypes::Interface>
+    parse_protocol(std::string_view protocol_xml);
+}

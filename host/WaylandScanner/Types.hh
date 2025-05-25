@@ -6,45 +6,48 @@
 #include <variant>
 #include <vector>
 
+namespace Wayland {
+namespace ScannerTypes {
+
 // clang-format off
-struct WaylandArgTypeInt {};
-struct WaylandArgTypeUInt {};
-struct WaylandArgTypeUIntEnum
+struct ArgTypeInt {};
+struct ArgTypeUInt {};
+struct ArgTypeUIntEnum
 {
     std::optional<std::string> interface_name;
     std::string name;
 };
-struct WaylandArgTypeFixed {};
-struct WaylandArgTypeString {};
-struct WaylandArgTypeNullString {};
-struct WaylandArgTypeObject {};
-struct WaylandArgTypeNullObject {};
-struct WaylandArgTypeNewID {};
-struct WaylandArgTypeArray {};
-struct WaylandArgTypeFD {};
+struct ArgTypeFixed {};
+struct ArgTypeString {};
+struct ArgTypeNullString {};
+struct ArgTypeObject {};
+struct ArgTypeNullObject {};
+struct ArgTypeNewID {};
+struct ArgTypeArray {};
+struct ArgTypeFD {};
 
-using WaylandArgType = std::variant<
-    WaylandArgTypeInt,
-    WaylandArgTypeUInt,
-    WaylandArgTypeUIntEnum,
-    WaylandArgTypeFixed,
-    WaylandArgTypeString,
-    WaylandArgTypeNullString,
-    WaylandArgTypeObject,
-    WaylandArgTypeNullObject,
-    WaylandArgTypeNewID,
-    WaylandArgTypeArray,
-    WaylandArgTypeFD
+using ArgType = std::variant<
+    ArgTypeInt,
+    ArgTypeUInt,
+    ArgTypeUIntEnum,
+    ArgTypeFixed,
+    ArgTypeString,
+    ArgTypeNullString,
+    ArgTypeObject,
+    ArgTypeNullObject,
+    ArgTypeNewID,
+    ArgTypeArray,
+    ArgTypeFD
 >;
 // clang-format on
 
-struct WaylandArg
+struct Arg
 {
     std::string name;
-    WaylandArgType type;
+    ArgType type;
 };
 
-struct WaylandEnum
+struct Enum
 {
     std::string name;
     std::string description;
@@ -58,7 +61,7 @@ struct WaylandEnum
     std::vector<Entry> entries;
 };
 
-struct WaylandMessage
+struct Message
 {
     enum class Type
     {
@@ -69,20 +72,23 @@ struct WaylandMessage
     std::string description;
     std::optional<Type> type;
     std::string summary;
-    std::vector<WaylandArg> args;
+    std::vector<Arg> args;
 };
 
 // clang-format off
-struct WaylandRequest : WaylandMessage {};
-struct WaylandEvent : WaylandMessage {};
+struct Request : Message {};
+struct Event : Message {};
 // clang-format on
 
-struct WaylandInterface
+struct Interface
 {
     std::string name;
     uint32_t verison;
     std::string description;
-    std::vector<WaylandRequest> requests;
-    std::vector<WaylandEvent> events;
-    std::vector<WaylandEnum> enums;
+    std::vector<Request> requests;
+    std::vector<Event> events;
+    std::vector<Enum> enums;
 };
+
+} // namespace ScannerTypes
+} // namespace Wayland
