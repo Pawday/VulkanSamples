@@ -788,7 +788,7 @@ struct ProtoParser
 
 } // namespace
 
-std::vector<ScannerTypes::Interface>
+std::expected<ScannerTypes::Protocol, std::string>
     parse_protocol(std::string_view protocol_xml)
 {
     ProtoParser ctx;
@@ -798,7 +798,10 @@ std::vector<ScannerTypes::Interface>
     Parser p;
     p.parse(pcbs, protocol_xml);
 
-    return ctx.get();
+    ScannerTypes::Protocol out;
+    out.name = "PROTO NAME TODO";
+    out.interfaces = std::move(ctx.get());
+    return out;
 }
 
 } // namespace Wayland

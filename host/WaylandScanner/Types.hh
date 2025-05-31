@@ -92,5 +92,11 @@ struct Interface
     std::vector<Enum> enums;
 };
 
+struct Protocol
+{
+    std::string name;
+    std::vector<Interface> interfaces;
+};
+
 } // namespace ScannerTypes
 } // namespace Wayland

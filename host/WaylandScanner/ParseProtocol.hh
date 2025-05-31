@@ -1,12 +1,14 @@
 #pragma once
 
+#include <expected>
+#include <string>
 #include <string_view>
-#include <vector>
 
 #include "Types.hh"
 
 namespace Wayland {
 
-std::vector<ScannerTypes::Interface>
+std::expected<ScannerTypes::Protocol, std::string>
     parse_protocol(std::string_view protocol_xml);
+
 }

@@ -76,7 +76,14 @@ std::string read_file(const std::string &filename)
 void process_json_mode(const JsonModeArgs &args)
 {
     std::string protocol_xml = read_file(args.proto_file_name);
-    auto interfaces = Wayland::parse_protocol(protocol_xml);
+    auto protocol_op = Wayland::parse_protocol(protocol_xml);
+    if (!protocol_op) {
+        std::cerr << protocol_op.error();
+        return;
+    }
+    auto &protocol = protocol_op.value();
+    auto &interfaces = protocol.interfaces;
+
     std::cout << std::format("{}\n", FormatVectorWrap{interfaces});
 }
 
@@ -138,7 +145,13 @@ void process_enums_mode([[maybe_unused]] const EnumsModeArgs &args)
     std::ofstream output_file{args.output_file_name};
     output_file.exceptions(std::ifstream::failbit);
     output_file.exceptions(std::ifstream::badbit);
-    auto interfaces = Wayland::parse_protocol(protocol_xml);
+    auto protocol_op = Wayland::parse_protocol(protocol_xml);
+    if (!protocol_op) {
+        std::cerr << protocol_op.error();
+        return;
+    }
+    auto &protocol = protocol_op.value();
+    auto &interfaces = protocol.interfaces;
 
     std::vector<std::string> o_lines;
     o_lines.emplace_back("#pragma once");
