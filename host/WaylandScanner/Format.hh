@@ -279,3 +279,20 @@ struct std::formatter<Wayland::ScannerTypes::Interface> : FormatterNoParseArgs
         return ctx.out();
     }
 };
+
+template <>
+struct std::formatter<Wayland::ScannerTypes::Protocol> : FormatterNoParseArgs
+{
+    template <class FmtContext>
+    FmtContext::iterator
+        format(const Wayland::ScannerTypes::Protocol &p, FmtContext &ctx) const
+    {
+        std::format_to(ctx.out(), "{{");
+        std::format_to(ctx.out(), "\"name\":\"{}\"", p.name);
+        FormatVectorWrap interfaces_fmt{p.interfaces};
+        std::format_to(ctx.out(), ",");
+        std::format_to(ctx.out(), "\"interfaces\":{}", interfaces_fmt);
+        std::format_to(ctx.out(), "}}");
+        return ctx.out();
+    }
+};
