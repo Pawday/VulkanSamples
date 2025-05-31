@@ -82,9 +82,8 @@ void process_json_mode(const JsonModeArgs &args)
         return;
     }
     auto &protocol = protocol_op.value();
-    auto &interfaces = protocol.interfaces;
 
-    std::cout << std::format("{}\n", FormatVectorWrap{interfaces});
+    std::cout << std::format("{}\n", protocol);
 }
 
 struct EnumsModeArgs
