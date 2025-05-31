@@ -127,7 +127,8 @@ struct ProtoParser
         ScannerTypes::Message,
         ScannerTypes::Request,
         ScannerTypes::Event,
-        ScannerTypes::Interface
+        ScannerTypes::Interface,
+        ScannerTypes::Protocol
     >;
     // clang-format on
 
@@ -177,6 +178,29 @@ struct ProtoParser
         return out;
     }
 
+    auto parse_protocol(const AttributeMap &attrs) -> void
+    {
+        ScannerTypes::Protocol new_proto;
+        std::string name = attrs.at("name");
+        new_proto.name = name;
+        targets.emplace(std::move(new_proto));
+    }
+
+    auto fin_protocol() -> void
+    {
+        if (output_proto.has_value()) {
+            throw std::runtime_error(
+                "Multiple protocol parsing is not supported");
+        }
+
+        ParseTarget &active_target = targets.top();
+        ScannerTypes::Protocol active_proto =
+            std::get<ScannerTypes::Protocol>(active_target);
+        targets.pop();
+
+        output_proto = std::move(active_proto);
+    }
+
     auto parse_interface(const AttributeMap &attrs) -> void
     {
         ScannerTypes::Interface new_interface{};
@@ -211,12 +235,16 @@ struct ProtoParser
 
     auto fin_interface() -> void
     {
-        ParseTarget &active_target = targets.top();
-        ScannerTypes::Interface &active_interface =
-            std::get<ScannerTypes::Interface>(active_target);
-
-        interfaces.emplace_back(std::move(active_interface));
+        ParseTarget &active_interface_target = targets.top();
+        ScannerTypes::Interface active_interface =
+            std::get<ScannerTypes::Interface>(active_interface_target);
         targets.pop();
+
+        auto &active_proto_target = targets.top();
+        ScannerTypes::Protocol &active_protocol =
+            std::get<ScannerTypes::Protocol>(active_proto_target);
+
+        active_protocol.interfaces.emplace_back(std::move(active_interface));
     }
 
     auto parse_request(const AttributeMap &attrs) -> void
@@ -619,6 +647,7 @@ struct ProtoParser
 
     // clang-format off
     struct Tag {
+    struct Protocol {};
     struct Interface {};
     struct Request {};
     struct Event {};
@@ -627,6 +656,7 @@ struct ProtoParser
     struct Entry {};
     };
     using KnownTag = std::variant<
+        Tag::Protocol,
         Tag::Interface,
         Tag::Request,
         Tag::Event,
@@ -642,6 +672,7 @@ struct ProtoParser
     if (LITERAL == s) {                                                        \
         return TYPENAME{};                                                     \
     }
+        RETURN_IF_MATCH("protocol", Tag::Protocol);
         RETURN_IF_MATCH("interface", Tag::Interface);
         RETURN_IF_MATCH("request", Tag::Request);
         RETURN_IF_MATCH("event", Tag::Event);
@@ -656,6 +687,11 @@ struct ProtoParser
     {
         ProtoParser &P;
         AttributeMap attr_map;
+
+        void operator()(Tag::Protocol)
+        {
+            P.parse_protocol(attr_map);
+        }
 
         void operator()(Tag::Interface)
         {
@@ -708,6 +744,11 @@ struct ProtoParser
     {
         ProtoParser &parser;
 
+        void operator()(Tag::Protocol)
+        {
+            parser.fin_protocol();
+        }
+
         void operator()(Tag::Interface)
         {
             parser.fin_interface();
@@ -750,9 +791,9 @@ struct ProtoParser
         std::visit(vis, parsed_tag.value());
     }
 
-    auto get() const -> const std::vector<ScannerTypes::Interface> &
+    auto get() const -> const ScannerTypes::Protocol &
     {
-        return interfaces;
+        return output_proto.value();
     };
 
   private:
@@ -767,6 +808,7 @@ struct ProtoParser
             #TAG_NAME,                                                         \
             tgt.name);                                                         \
     }
+
         ADD_OVERLOAD(ScannerTypes::Arg, arg)
         ADD_OVERLOAD(ScannerTypes::Enum, enum)
         ADD_OVERLOAD(ScannerTypes::Enum::Entry, entry)
@@ -774,6 +816,7 @@ struct ProtoParser
         ADD_OVERLOAD(ScannerTypes::Request, request)
         ADD_OVERLOAD(ScannerTypes::Event, event)
         ADD_OVERLOAD(ScannerTypes::Interface, interface)
+        ADD_OVERLOAD(ScannerTypes::Protocol, protocol)
 #undef ADD_OVERLOAD
     };
 
@@ -782,8 +825,9 @@ struct ProtoParser
         return std::visit(ParseTargetNameVisitor{}, tgt);
     }
 
-    std::vector<ScannerTypes::Interface> interfaces;
     std::stack<ParseTarget> targets;
+
+    std::optional<ScannerTypes::Protocol> output_proto;
 };
 
 } // namespace
@@ -798,10 +842,7 @@ std::expected<ScannerTypes::Protocol, std::string>
     Parser p;
     p.parse(pcbs, protocol_xml);
 
-    ScannerTypes::Protocol out;
-    out.name = "PROTO NAME TODO";
-    out.interfaces = std::move(ctx.get());
-    return out;
+    return ctx.get();
 }
 
 } // namespace Wayland
