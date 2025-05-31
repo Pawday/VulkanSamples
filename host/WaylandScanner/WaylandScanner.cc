@@ -40,9 +40,18 @@ std::expected<JsonModeArgs, std::string>
     }
 
     if (args.size() != 2) {
-        std::string message =
-            "Expected only one [<filename>] argument with --json flag";
-        message += std::format(", got {} instead", args.size() - 1);
+        size_t nb_json_mod_flags = args.size() - 1;
+
+        std::string message;
+        message += "Expected";
+        if (nb_json_mod_flags != 0) {
+            message += " only one";
+        }
+        message += " [<filename>] argument with --json flag";
+        if (nb_json_mod_flags != 0) {
+            message +=
+                std::format(", got {} arguments instead", nb_json_mod_flags);
+        }
         return std::unexpected(std::move(message));
     }
     args.erase(json_flag_it);
@@ -51,6 +60,22 @@ std::expected<JsonModeArgs, std::string>
     args.clear();
 
     return JsonModeArgs{input_proto_filename};
+}
+
+void process_json_mode(const JsonModeArgs &args)
+{
+    std::string protocol_xml = [&]() {
+        std::ifstream file{args.proto_file_name};
+        file.exceptions(std::ifstream::failbit);
+        file.exceptions(std::ifstream::badbit);
+        std::stringstream content;
+        content << file.rdbuf();
+        return content.str();
+    }();
+
+    auto interfaces = Wayland::parse_protocol(protocol_xml);
+
+    std::cout << std::format("{}\n", FormatVectorWrap{interfaces});
 }
 
 } // namespace
@@ -66,25 +91,20 @@ int Application::main()
 
     args.argv.erase(args.argv.begin());
 
+    std::vector<std::string> failue_msgs;
+
     auto json_mode_args_op = parse_json_mode_args(args.argv);
-    if (!json_mode_args_op) {
-        std::cout << "JSON Mode: " << json_mode_args_op.error() << '\n';
-        return EXIT_FAILURE;
+    if (json_mode_args_op) {
+        process_json_mode(json_mode_args_op.value());
+        return EXIT_SUCCESS;
     }
-    auto &json_mode_args = json_mode_args_op.value();
+    std::string json_mode_message =
+        std::format("JSON Mode: [{}]", json_mode_args_op.error());
+    failue_msgs.emplace_back(std::move(json_mode_message));
 
-    std::string protocol_xml = [&]() {
-        std::ifstream file{json_mode_args.proto_file_name};
-        file.exceptions(std::ifstream::failbit);
-        file.exceptions(std::ifstream::badbit);
-        std::stringstream content;
-        content << file.rdbuf();
-        return content.str();
-    }();
-
-    auto interfaces = Wayland::parse_protocol(protocol_xml);
-
-    std::cout << std::format("{}\n", FormatVectorWrap{interfaces});
-
-    return EXIT_SUCCESS;
+    std::cout << "Failue:" << '\n';
+    for (auto &msg : failue_msgs) {
+        std::cout << msg << '\n';
+    }
+    return EXIT_FAILURE;
 }
