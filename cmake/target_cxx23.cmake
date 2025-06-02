@@ -1,5 +1,3 @@
-function(target_cxx23 tgt)
-    set_property(TARGET ${tgt} PROPERTY CXX_STANDARD 23)
-    set_property(TARGET ${tgt} PROPERTY CXX_STANDARD_REQUIRED ON)
-    set_property(TARGET ${tgt} PROPERTY CXX_EXTENSIONS ON)
-endfunction()
+set_property(TARGET ${TARGET_TO_23} PROPERTY CXX_STANDARD 23)
+set_property(TARGET ${TARGET_TO_23} PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ${TARGET_TO_23} PROPERTY CXX_EXTENSIONS ON)

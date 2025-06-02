@@ -45,4 +45,6 @@ target_include_directories(${PREF}shaders.headers INTERFACE include)
 
 add_library(${PREF}shaders STATIC spans.cc)
 target_link_libraries(${PREF}shaders PRIVATE ${PREF}shaders.headers)
-target_cxx23(${PREF}shaders)
+
+set(TARGET_TO_23 "${PREF}shaders")
+include(target_cxx23)

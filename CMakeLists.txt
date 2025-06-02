@@ -37,7 +37,8 @@ function(add_application TARGET_NAME)
     add_library(${LIBRARY_TARGET_NAME} STATIC ${ARGN})
     set_target_properties(${LIBRARY_TARGET_NAME} PROPERTIES EXCLUDE_FROM_ALL ON)
     target_link_libraries(${LIBRARY_TARGET_NAME} PRIVATE ${PREF}Launcher.headers)
-    target_cxx23(${LIBRARY_TARGET_NAME})
+    set(TARGET_TO_23 ${LIBRARY_TARGET_NAME})
+    include(target_cxx23)
     target_strict_compilation(${LIBRARY_TARGET_NAME})
 
     add_executable(${EXEC_TARGET_NAME} $<TARGET_OBJECTS:${PREF}Launcher>)
@@ -101,7 +102,8 @@ add_library(${PREF}Common STATIC
     Messenger.cc
     SimpleVulkanObjects.cc
 )
-target_cxx23(${PREF}Common)
+set(TARGET_TO_23 "${PREF}Common")
+include(target_cxx23)
 target_strict_compilation(${PREF}Common)
 target_link_libraries(${PREF}Common
     PRIVATE
@@ -132,7 +134,8 @@ if(NOT ${${PREF}WAYLAND_DYNAMIC})
     )
 endif()
 add_subdirectory(wayland)
-target_cxx23(${PREF}WaylandContext)
+set(TARGET_TO_23 "${PREF}WaylandContext")
+include(target_cxx23)
 target_strict_compilation(${PREF}WaylandContext)
 target_link_libraries(${PREF}WaylandContext PRIVATE
     ${PREF}vulkan.headers
