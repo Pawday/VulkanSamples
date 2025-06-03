@@ -7,7 +7,7 @@ add_subdirectory(Wayland)
 add_subdirectory(cpptrace)
 add_subdirectory(expat)
 add_subdirectory(libdwarf)
-
+add_subdirectory(wl_gena)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(Config.cmake.in

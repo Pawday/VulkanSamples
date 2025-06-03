@@ -4,6 +4,7 @@ list(APPEND STATIC_LIBS
     libdwarf
     cpptrace
     expat
+    wl_gena
 )
 
 list(APPEND HEADER_LIBS

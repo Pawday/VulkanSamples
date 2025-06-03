@@ -1,11 +1,11 @@
 application_sources(${PREF}WaylandScanner PRIVATE 
-    WaylandScanner.cc
-    WaylandProtoParser.cc
+    Driver.cc
 )
 
 application_link_libraries(${PREF}WaylandScanner
     PRIVATE
-        ${PREF}expat.headers
+        ${PREF}wl_gena.headers
     INTERFACE
+        ${PREF}wl_gena.static
         ${PREF}expat.static
 )
