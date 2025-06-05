@@ -5,8 +5,12 @@ set(PREF "${CMAKE_PROJECT_NAME}_")
 
 option(${PREF}INSTALL_DEPS_ONLY "Only build and install deps as cmake package" OFF)
 option(${PREF}USE_PACKAGED_DEPS "Use find_package for deps produced by INSTALL_DEPS_ONLY" OFF)
-option(${PREF}INSTALL_HOST_APPS_ONLY "Only build and install host apps as cmake package" OFF)
-option(${PREF}USE_PACKAGED_HOST_APPS "Use find_package for host apps produced by INSTALL_HOST_APPS_ONLY" OFF)
+option(${PREF}INSTALL_HOSTBOX_ONLY "Only build and install HostBox as cmake package" OFF)
+option(${PREF}FIND_HOSTBOX "Use find_package for hostbox produced by INSTALL_HOSTBOX_ONLY" OFF)
+
+if(${PREF}INSTALL_DEPS_ONLY AND ${PREF}INSTALL_HOSTBOX_ONLY)
+    message(FATAL_ERROR "${PREF}INSTALL_DEPS_ONLY and ${PREF}INSTALL_HOSTBOX_ONLY cannot be both set")
+endif()
 
 option(${PREF}WAYLAND_DYNAMIC "Find wayland-client library at runtime (dlopen)" OFF)
 
@@ -55,29 +59,18 @@ function(application_link_libraries TARGET_NAME)
     target_link_libraries(${LIBRARY_TARGET_NAME} ${ARGN})
 endfunction()
 
-list(APPEND HOST_APPLICATIONS
-    wl_gena
-)
-
-foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
-    set(TGT "${PREF}${HOST_APPLICATION}")
-    add_application(${TGT})
-endforeach()
-
-set(HOST_APPS_EXPORT_NAME "${PREF}host")
-if(${PREF}INSTALL_HOST_APPS_ONLY)
-    add_subdirectory(host)
-    return()
-endif()
-
-if(${PREF}USE_PACKAGED_HOST_APPS)
-    find_package(${HOST_APPS_EXPORT_NAME} REQUIRED)
+set(HOSTBOX_EXPORT_NAME "${PREF}HostBox")
+if(${PREF}FIND_HOSTBOX)
+    find_package(${HOSTBOX_EXPORT_NAME} REQUIRED)
 else()
-    foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
-        set(TGT "${PREF}${HOST_APPLICATION}")
-        # set_target_properties(${TGT} PROPERTIES EXCLUDE_FROM_ALL ON) #TODO[CMake]: resolve host applications build policy
-    endforeach()
-    add_subdirectory(host EXCLUDE_FROM_ALL)
+    add_application(${PREF}HostBox)
+    application_sources(${PREF}HostBox PRIVATE hostbox/HostBox.cc)
+
+    if(${PREF}INSTALL_HOSTBOX_ONLY)
+        add_subdirectory(hostbox)
+        return()
+    endif()
+    add_subdirectory(hostbox EXCLUDE_FROM_ALL)
 endif()
 
 add_host_tool(glslang HAS_GLSLAND)

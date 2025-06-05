@@ -1,1 +1,0 @@
-include(${CMAKE_CURRENT_LIST_DIR}/@HOST_APPS_EXPORT_NAME@.cmake)
