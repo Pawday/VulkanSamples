@@ -2,6 +2,14 @@ set(EXPORT_VERSION "0.0.0")
 
 #add_subdirectory(wl_gena)
 
+add_library(${PREF}HostBoxDeps INTERFACE)
+target_link_libraries(${PREF}HostBoxDeps
+    INTERFACE
+        ${PREF}wl_gena.headers
+        ${PREF}wl_gena.static
+        ${PREF}expat.static
+)
+
 include(CMakePackageConfigHelpers)
 configure_package_config_file(Config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/${HOSTBOX_EXPORT_NAME}Config.cmake
