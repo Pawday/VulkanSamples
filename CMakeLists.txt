@@ -56,7 +56,6 @@ function(application_link_libraries TARGET_NAME)
 endfunction()
 
 list(APPEND HOST_APPLICATIONS
-    TestHostApplication
     wl_gena
 )
 

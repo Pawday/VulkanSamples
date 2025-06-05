@@ -1,6 +1,5 @@
 set(EXPORT_VERSION "0.0.0")
 
-add_subdirectory(TestHostApplication)
 add_subdirectory(wl_gena)
 
 include(CMakePackageConfigHelpers)
