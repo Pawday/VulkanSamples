@@ -57,7 +57,7 @@ endfunction()
 
 list(APPEND HOST_APPLICATIONS
     TestHostApplication
-    WaylandScanner
+    wl_gena
 )
 
 foreach(HOST_APPLICATION ${HOST_APPLICATIONS})

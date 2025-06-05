@@ -1,8 +1,8 @@
-application_sources(${PREF}WaylandScanner PRIVATE 
+application_sources(${PREF}wl_gena PRIVATE
     Driver.cc
 )
 
-application_link_libraries(${PREF}WaylandScanner
+application_link_libraries(${PREF}wl_gena
     PRIVATE
         ${PREF}wl_gena.headers
     INTERFACE

@@ -1,7 +1,7 @@
 set(EXPORT_VERSION "0.0.0")
 
 add_subdirectory(TestHostApplication)
-add_subdirectory(WaylandScanner)
+add_subdirectory(wl_gena)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(Config.cmake.in
