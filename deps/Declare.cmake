@@ -5,6 +5,11 @@ list(APPEND STATIC_LIBS
     cpptrace
     expat
     wl_gena
+    glslang
+)
+
+list(APPEND SHARED_LIBS
+    glslang
 )
 
 list(APPEND HEADER_LIBS
@@ -24,6 +29,11 @@ endforeach()
 foreach(S_TARGET ${STATIC_LIBS})
     set(TGT "${PREF}${S_TARGET}.static")
     add_library(${TGT} STATIC)
+endforeach()
+
+foreach(D_TARGET ${SHARED_LIBS})
+    set(TGT "${PREF}${D_TARGET}.shared")
+    add_library(${TGT} SHARED)
 endforeach()
 
 endmacro()
