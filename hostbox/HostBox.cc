@@ -1,7 +1,9 @@
+#include <array>
 #include <expected>
 #include <format>
 #include <iostream>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -14,26 +16,82 @@
 
 #include "Application.hh"
 
+#include "GLSL.hh"
+
+template <typename VariantT>
+struct VariantArray_t;
+
+template <typename... T>
+struct VariantArray_t<std::variant<T...>>
+{
+    using VariantT = std::variant<T...>;
+    static constexpr std::array<VariantT, sizeof...(T)> value{T{}...};
+};
+
+template <typename VariantT>
+constexpr auto VariantArray = VariantArray_t<VariantT>::value;
+
 namespace {
 
 // clang-format off
 struct HostToolType
 {
     struct wl_gena {};
+    struct glsl {};
 };
 
 using HostTool = std::variant<
-    HostToolType::wl_gena
+    HostToolType::wl_gena,
+    HostToolType::glsl
 >;
 // clang-format on
 
-std::expected<HostTool, std::string> host_tool_from_name(std::string_view str)
+static constexpr auto host_tool_array = VariantArray<HostTool>;
+
+constexpr std::expected<HostTool, std::string>
+    host_tool_from_name(std::string_view str)
 {
-    if (str == "wl_gena") {
-        return HostToolType::wl_gena{};
+    struct
+    {
+#define OVERLOAD(tool_name)                                                    \
+    constexpr std::string operator()(HostToolType::tool_name)                  \
+    {                                                                          \
+        return #tool_name;                                                     \
     }
 
-    return std::unexpected{std::format("Unknown host tool [{}]", str)};
+        OVERLOAD(wl_gena)
+        OVERLOAD(glsl)
+
+#undef OVERLOAD
+
+    } vis;
+
+    for (auto &tool : host_tool_array) {
+        std::string tool_name = std::visit(vis, tool);
+        if (tool_name == str) {
+            return tool;
+        }
+    }
+
+    std::string all_tools;
+    all_tools += '[';
+
+    bool first = true;
+    for (auto &tool : host_tool_array) {
+        std::string tool_name = std::visit(vis, tool);
+        if (!first) {
+            all_tools += ", ";
+        }
+        first = false;
+
+        all_tools = all_tools + '[' + tool_name + ']';
+    }
+    all_tools += ']';
+
+    auto msg = std::format(
+        "Unknown host tool [{}] - expected any of {}", str, all_tools);
+
+    return std::unexpected{std::move(msg)};
 }
 
 struct HostToolDriver
@@ -46,6 +104,11 @@ struct HostToolDriver
     int operator()(HostToolType::wl_gena)
     {
         return wl_gena_main(_argv);
+    }
+
+    int operator()(HostToolType::glsl)
+    {
+        return glsl_main(_argv);
     }
 
   private:
@@ -73,6 +136,4 @@ int Application::main()
     }
 
     return std::visit(HostToolDriver{std::move(argv)}, host_tool_op.value());
-
-    return EXIT_SUCCESS;
 }

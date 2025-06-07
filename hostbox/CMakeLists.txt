@@ -1,13 +1,18 @@
 set(EXPORT_VERSION "0.0.0")
 
-#add_subdirectory(wl_gena)
-
-add_library(${PREF}HostBoxDeps INTERFACE)
-target_link_libraries(${PREF}HostBoxDeps
+add_library(${PREF}HostBoxLib STATIC)
+target_link_libraries(${PREF}HostBoxLib
     INTERFACE
         ${PREF}wl_gena.headers
         ${PREF}wl_gena.static
         ${PREF}expat.static
+
+        ${PREF}glslang.headers
+        ${PREF}glslang.static
+)
+
+target_sources(${PREF}HostBoxLib PRIVATE
+    GLSL.cc
 )
 
 include(CMakePackageConfigHelpers)
@@ -20,11 +25,6 @@ write_basic_package_version_file(
     VERSION ${EXPORT_VERSION}
     COMPATIBILITY ExactVersion
 )
-
-foreach(HOST_APPLICATION ${HOST_APPLICATIONS})
-    set(TGT "${PREF}${HOST_APPLICATION}")
-    install(TARGETS ${TGT} EXPORT ${HOSTBOX_EXPORT_NAME} DESTINATION "${HOSTBOX_EXPORT_NAME}-${EXPORT_VERSION}/bin/")
-endforeach()
 
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/${HOSTBOX_EXPORT_NAME}Config.cmake

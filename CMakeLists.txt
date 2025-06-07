@@ -72,7 +72,7 @@ else()
     endif()
     add_subdirectory(hostbox EXCLUDE_FROM_ALL)
 
-    application_link_libraries(${PREF}HostBox PRIVATE ${PREF}HostBoxDeps)
+    application_link_libraries(${PREF}HostBox PRIVATE ${PREF}HostBoxLib)
 endif()
 
 add_host_tool(glslang HAS_GLSLAND)
