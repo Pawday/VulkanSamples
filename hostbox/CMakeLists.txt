@@ -1,13 +1,16 @@
 set(EXPORT_VERSION "0.0.0")
 
 add_library(${PREF}HostBoxLib STATIC)
+set(TARGET_TO_23 "${PREF}HostBoxLib")
+include(target_cxx23)
 target_link_libraries(${PREF}HostBoxLib
+    PRIVATE
+        ${PREF}glslang.headers
     INTERFACE
         ${PREF}wl_gena.headers
         ${PREF}wl_gena.static
         ${PREF}expat.static
 
-        ${PREF}glslang.headers
         ${PREF}glslang.static
 )
 
