@@ -20,3 +20,4 @@ target_sources(${PREF}wl_gena.headers INTERFACE
 )
 
 target_sources(${PREF}wl_gena.static PRIVATE $<TARGET_OBJECTS:${WL_GENA_PREF}wl_gena.static>)
+target_sources(${PREF}wl_gena.shared PRIVATE $<TARGET_OBJECTS:${WL_GENA_PREF}wl_gena.shared>)

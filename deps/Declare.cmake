@@ -12,6 +12,7 @@ list(APPEND SHARED_LIBS
     libdwarf
     cpptrace
     expat
+    wl_gena
     glslang
 )
 
