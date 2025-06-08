@@ -3,13 +3,29 @@ if(NOT DEFINED ${PREF}CPPTRACE_UNWIND_WITH_LIBUNWIND)
 endif()
 
 set(USE_DWARF 1)
-set(USE_ADDR2LINE 0)
 
-set(CPPTRACE_SOURCES_PREFIX "src/src")
-target_include_directories(${PREF}cpptrace.static PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${CPPTRACE_SOURCES_PREFIX}>)
-target_link_libraries(${PREF}cpptrace.static PRIVATE ${PREF}cpptrace.headers)
 
-list(APPEND CPPTRACE_RELATIVE_SOURCES
+list(APPEND HEADERS
+    basic.hpp
+    cpptrace.hpp
+    exceptions.hpp
+    formatting.hpp
+    forward.hpp
+    from_current.hpp
+    gdb_jit.hpp
+    io.hpp
+    utils.hpp
+)
+list(TRANSFORM HEADERS PREPEND "src/include/cpptrace/")
+
+target_sources(${PREF}cpptrace.headers INTERFACE
+    FILE_SET headers
+    TYPE HEADERS
+    BASE_DIRS "src/include"
+    FILES ${HEADERS}
+)
+
+list(APPEND SOURCES
     binary/elf.cpp
     binary/mach-o.cpp
     binary/module_base.cpp
@@ -52,67 +68,49 @@ list(APPEND CPPTRACE_RELATIVE_SOURCES
     utils/utils.cpp
     platform/dbghelp_utils.cpp
 )
+set(CPPTRACE_SOURCES_PREFIX "src/src")
+list(TRANSFORM SOURCES PREPEND "${CPPTRACE_SOURCES_PREFIX}/")
 
-list(TRANSFORM CPPTRACE_RELATIVE_SOURCES PREPEND "${CPPTRACE_SOURCES_PREFIX}/" OUTPUT_VARIABLE CPPTRACE_SOURCES)
-target_sources(${PREF}cpptrace.static PRIVATE ${CPPTRACE_SOURCES})
+target_sources(${PREF}cpptrace.static PRIVATE ${SOURCES})
+target_sources(${PREF}cpptrace.shared PRIVATE ${SOURCES})
+
+set(GENEXPR_PRIVATE_INCLUDE_DIR $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${CPPTRACE_SOURCES_PREFIX}>)
+target_include_directories(${PREF}cpptrace.static PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
+target_include_directories(${PREF}cpptrace.shared PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
+
+target_link_libraries(${PREF}cpptrace.static PRIVATE ${PREF}cpptrace.headers)
+target_link_libraries(${PREF}cpptrace.shared PRIVATE ${PREF}cpptrace.headers)
+
+list(APPEND DEFINES CPPTRACE_DEMANGLE_WITH_CXXABI)
 
 if(${PREF}CPPTRACE_UNWIND_WITH_LIBUNWIND)
-    list(APPEND UNWIND_BACKEND_DEFINES
+    list(APPEND DEFINES
         CPPTRACE_UNWIND_WITH_LIBUNWIND
         UNW_LOCAL_ONLY
     )
 else()
-    list(APPEND UNWIND_BACKEND_DEFINES CPPTRACE_UNWIND_WITH_UNWIND)
+    list(APPEND DEFINES CPPTRACE_UNWIND_WITH_NOTHING)
 endif()
 
-target_compile_definitions(${PREF}cpptrace.static PRIVATE
-    ${UNWIND_BACKEND_DEFINES}
-    CPPTRACE_DEMANGLE_WITH_CXXABI
-    CPPTRACE_GET_SYMBOLS_WITH_NOTHING
-)
+if(USE_DWARF)
+    list(APPEND DEFINES CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
+else()
+    list(APPEND DEFINES CPPTRACE_GET_SYMBOLS_WITH_NOTHING)
+endif()
+
+target_compile_definitions(${PREF}cpptrace.static PRIVATE ${DEFINES})
+target_compile_definitions(${PREF}cpptrace.shared PRIVATE ${DEFINES})
 
 if(USE_DWARF)
-    target_compile_definitions(${PREF}cpptrace.static PRIVATE CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
-    target_link_libraries(${PREF}cpptrace.static
-        PRIVATE
-            ${PREF}libdwarf.headers
-        INTERFACE
-            ${PREF}libdwarf.static
-    )
+    target_link_libraries(${PREF}cpptrace.static PRIVATE ${PREF}libdwarf.headers)
+    target_link_libraries(${PREF}cpptrace.shared PRIVATE ${PREF}libdwarf.headers)
+
+    target_link_libraries(${PREF}cpptrace.static INTERFACE ${PREF}libdwarf.static)
+    target_link_libraries(${PREF}cpptrace.shared INTERFACE ${PREF}libdwarf.shared)
 endif()
 
 if(${PREF}CPPTRACE_UNWIND_WITH_LIBUNWIND)
     find_library(${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND unwind REQUIRED)
-    target_link_libraries(${PREF}cpptrace.static
-        PRIVATE
-        ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND}
-    )
+    target_link_libraries(${PREF}cpptrace.static PRIVATE ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND})
+    target_link_libraries(${PREF}cpptrace.shared PRIVATE ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND})
 endif()
-
-if(USE_ADDR2LINE)
-    target_compile_definitions(${PREF}cpptrace.static
-        PRIVATE
-            CPPTRACE_GET_SYMBOLS_WITH_ADDR2LINE
-            CPPTRACE_ADDR2LINE_PATH="/usr/bin/addr2line"
-    )
-endif()
-
-list(APPEND HEADERS
-    basic.hpp
-    cpptrace.hpp
-    exceptions.hpp
-    formatting.hpp
-    forward.hpp
-    from_current.hpp
-    gdb_jit.hpp
-    io.hpp
-    utils.hpp
-)
-list(TRANSFORM HEADERS PREPEND "src/include/cpptrace/")
-
-target_sources(${PREF}cpptrace.headers INTERFACE
-    FILE_SET headers
-    TYPE HEADERS
-    BASE_DIRS "src/include"
-    FILES ${HEADERS}
-)

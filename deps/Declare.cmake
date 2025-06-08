@@ -10,6 +10,7 @@ list(APPEND STATIC_LIBS
 
 list(APPEND SHARED_LIBS
     libdwarf
+    cpptrace
     expat
     glslang
 )
