@@ -9,6 +9,7 @@ list(APPEND STATIC_LIBS
 )
 
 list(APPEND SHARED_LIBS
+    libdwarf
     expat
     glslang
 )

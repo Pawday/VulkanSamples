@@ -12,7 +12,7 @@ set(HAVE_UNISTD_H ON)
 set(HAVE_FCNTL_H ON)
 configure_file("src/cmake/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
 
-list(APPEND LIBDWARF_RELATIVE_SOURCES
+list(APPEND SOURCES
     dwarf_abbrev.c
     dwarf_alloc.c
     dwarf_crc.c
@@ -74,9 +74,11 @@ list(APPEND LIBDWARF_RELATIVE_SOURCES
     dwarf_xu_index.c
     dwarf_print_lines.c
 )
+list(TRANSFORM SOURCES PREPEND "${LIBDWARF_SOURCES_PREFIX}/")
 
-list(TRANSFORM LIBDWARF_RELATIVE_SOURCES PREPEND "${LIBDWARF_SOURCES_PREFIX}/" OUTPUT_VARIABLE LIBDWARF_SOURCES)
-target_sources(${PREF}libdwarf.static PRIVATE ${LIBDWARF_SOURCES})
-target_include_directories(${PREF}libdwarf.static PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
+target_sources(${PREF}libdwarf.static PRIVATE ${SOURCES})
+target_sources(${PREF}libdwarf.shared PRIVATE ${SOURCES})
 
-
+set(GENEXPR_PRIVATE_INCLUDE_DIR $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
+target_include_directories(${PREF}libdwarf.static PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
+target_include_directories(${PREF}libdwarf.shared PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
