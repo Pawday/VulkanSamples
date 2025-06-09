@@ -27,7 +27,6 @@ else()
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(add_host_tool)
 include(add_system_library)
 include(target_cxx23)
 include(target_strict_compilation)
@@ -73,11 +72,6 @@ else()
     add_subdirectory(hostbox EXCLUDE_FROM_ALL)
 
     application_link_libraries(${PREF}HostBox PRIVATE ${PREF}HostBoxLib)
-endif()
-
-add_host_tool(glslang HAS_GLSLAND)
-if(NOT ${HAS_GLSLAND})
-    message(FATAL_ERROR "No glslang")
 endif()
 
 add_subdirectory(shaders)
