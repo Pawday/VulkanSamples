@@ -1,3 +1,25 @@
+include("${CMAKE_CURRENT_SOURCE_DIR}/src/parse_version.cmake")
+
+set(PROJECT "${PREF}_GLSLANG")
+set(GLSLANG_CHANGES_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/CHANGES.md")
+include(${CMAKE_CURRENT_SOURCE_DIR}/src/parse_version.cmake)
+parse_version(${GLSLANG_CHANGES_FILE} GLSLANG)
+function(parse_version)
+    message(FATAL_ERROR "Overwritten by glslang function [parse_version]")
+endfunction()
+
+set(GLSLANG_GENERATED_INCLUDEDIR "${CMAKE_CURRENT_BINARY_DIR}/include")
+set(GLSLANG_CHANGES_FILE         "${CMAKE_CURRENT_SOURCE_DIR}/src/CHANGES.md")
+set(GLSLANG_BUILD_INFO_H_TMPL    "${CMAKE_CURRENT_SOURCE_DIR}/src/build_info.h.tmpl")
+set(GLSLANG_BUILD_INFO_H         "${GLSLANG_GENERATED_INCLUDEDIR}/glslang/build_info.h")
+
+set(major  ${GLSLANG_VERSION_MAJOR})
+set(minor  ${GLSLANG_VERSION_MINOR})
+set(patch  ${GLSLANG_VERSION_PATCH})
+set(flavor ${GLSLANG_VERSION_FLAVOR})
+configure_file(${GLSLANG_BUILD_INFO_H_TMPL} ${GLSLANG_BUILD_INFO_H} @ONLY)
+
+
 list(APPEND BASIC_HEADERS
     glslang_c_interface.h
     glslang_c_shader_types.h
@@ -5,23 +27,28 @@ list(APPEND BASIC_HEADERS
 )
 list(TRANSFORM BASIC_HEADERS PREPEND "src/glslang/Include/")
 
-target_sources(${PREF}glslang.headers INTERFACE
-    FILE_SET headers
-    TYPE HEADERS
-    BASE_DIRS "src/glslang/Include/" #TODO[glslang] Fix BASE_DIRS for relative #include
-    FILES ${BASIC_HEADERS}
-)
-
 list(APPEND PUBLIC_HEADERS
-    resource_limits_c.h #TODO[glslang] Fix BASE_DIRS for relative #include in resource_limits_c.h
+    resource_limits_c.h
 )
 list(TRANSFORM PUBLIC_HEADERS PREPEND "src/glslang/Public/")
 
 target_sources(${PREF}glslang.headers INTERFACE
     FILE_SET headers
     TYPE HEADERS
-    BASE_DIRS "src/glslang/Public/" #TODO[glslang] Fix BASE_DIRS for relative #include
-    FILES ${PUBLIC_HEADERS}
+    BASE_DIRS "src/"
+    FILES ${PUBLIC_HEADERS} ${PUBLIC_HEADERS}
+)
+
+list(APPEND GENERATED_HEADERS
+    glslang/build_info.h
+)
+list(TRANSFORM GENERATED_HEADERS PREPEND "${GLSLANG_GENERATED_INCLUDEDIR}/")
+
+target_sources(${PREF}glslang.headers INTERFACE
+    FILE_SET headers
+    TYPE HEADERS
+    BASE_DIRS ${GLSLANG_GENERATED_INCLUDEDIR}
+    FILES ${GENERATED_HEADERS}
 )
 
 list(APPEND GLSLANG_SPIRV_SOURCES

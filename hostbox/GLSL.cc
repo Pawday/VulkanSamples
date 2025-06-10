@@ -4,7 +4,6 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -14,9 +13,9 @@
 #include <cstdint>
 #include <cstdlib>
 
-#include <glslang_c_interface.h>
-#include <glslang_c_shader_types.h>
-#include <resource_limits_c.h>
+#include <glslang/Include/glslang_c_interface.h>
+#include <glslang/Include/glslang_c_shader_types.h>
+#include <glslang/Public/resource_limits_c.h>
 
 #include "GLSL.hh"
 
