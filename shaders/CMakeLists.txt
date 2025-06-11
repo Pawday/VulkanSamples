@@ -5,13 +5,13 @@ function(add_glsl_shader TARGET_NAME SHADER_FILE STAGE_TYPE)
     set(GLSLC_OUTPUT_FILE     "${GLSLC_OUTPUT_FILE_DIR}/${SHADER_FILE}.spv.hex")
 
 
-    set(COMPILE_COMMAND "$<TARGET_FILE:${PREF}HostBox>" "glsl" "${STAGE_TYPE}" "${INPUT_FILE}" "${GLSLC_OUTPUT_FILE}")
+    set(COMPILE_COMMAND "$<TARGET_FILE:${PREF}host_glslc>" "${STAGE_TYPE}" "${INPUT_FILE}" "${GLSLC_OUTPUT_FILE}")
 
     add_custom_command(
         OUTPUT ${GLSLC_OUTPUT_FILE}
         COMMAND ${COMPILE_COMMAND}
-        DEPENDS ${INPUT_FILE} "$<TARGET_FILE:${PREF}HostBox>"
-        COMMENT "glsl ${STAGE_TYPE} ${SHADER_FILE}"
+        DEPENDS ${INPUT_FILE} "$<TARGET_FILE:${PREF}host_glslc>"
+        COMMENT "glslc ${STAGE_TYPE} ${SHADER_FILE}"
     )
 
     if (NOT TARGET ${TARGET_NAME}_gen)

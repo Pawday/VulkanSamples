@@ -17,7 +17,7 @@
 #include <glslang/Include/glslang_c_shader_types.h>
 #include <glslang/Public/resource_limits_c.h>
 
-#include "GLSL.hh"
+#include "Application.hh"
 
 namespace {
 std::vector<std::byte> read_file(const std::string &name)
@@ -82,8 +82,6 @@ std::expected<glslang_stage_t, std::string>
 
     return std::unexpected(std::format("Unknown shader stage [{}]", stage_str));
 }
-
-} // namespace
 
 int glsl_main(const std::vector<std::string> &args)
 {
@@ -177,13 +175,12 @@ int glsl_main(const std::vector<std::string> &args)
         active_line_nums.clear();
     };
 
-    auto add_word =
-        [&ofile_lines, &active_line_nums, &flush_active_line](uint32_t word) {
-            if (active_line_nums.size() == 8) {
-                flush_active_line();
-            }
-            active_line_nums.push_back(word);
-        };
+    auto add_word = [&active_line_nums, &flush_active_line](uint32_t word) {
+        if (active_line_nums.size() == 8) {
+            flush_active_line();
+        }
+        active_line_nums.push_back(word);
+    };
 
     for (auto &word : SPIRV_code) {
         add_word(word);
@@ -204,3 +201,18 @@ int glsl_main(const std::vector<std::string> &args)
 
     return EXIT_SUCCESS;
 }
+
+} // namespace
+
+int Application::main()
+{
+    auto argv = get_libc_args().value().argv;
+    if (argv.size() < 1) {
+        std::cerr << "No args" << '\n';
+        return EXIT_FAILURE;
+    }
+
+    argv.erase(std::begin(argv));
+    return glsl_main(argv);
+}
+
