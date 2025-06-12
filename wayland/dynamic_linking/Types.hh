@@ -6,19 +6,35 @@
 
 #include "Handles.hh"
 
-namespace Wayland {
+struct wl_interface;
 
-struct Message
+struct wl_message
 {
     /** Message name */
     const char *name;
     /** Message signature */
     const char *signature;
     /** Object argument interfaces */
-    const Interface **types;
+    const wl_interface **types;
 };
 
-struct Array
+struct wl_interface
+{
+    /** Interface name */
+    const char *name;
+    /** Interface version */
+    int version;
+    /** Number of methods (requests) */
+    int method_count;
+    /** Method (request) signatures */
+    const wl_message *methods;
+    /** Number of events */
+    int event_count;
+    /** Event signatures */
+    const wl_message *events;
+};
+
+struct wl_array
 {
     /** Array size */
     size_t size;
@@ -28,16 +44,16 @@ struct Array
     void *data;
 };
 
-using Fixed = int32_t;
+using wl_fixed_t = int32_t;
 
-union Argument {
+union wl_argument {
     int32_t i;     /**< `int`    */
     uint32_t u;    /**< `uint`   */
-    Fixed f;       /**< `fixed`  */
+    wl_fixed_t f;  /**< `fixed`  */
     const char *s; /**< `string` */
-    Object *o;     /**< `object` */
+    wl_object *o;  /**< `object` */
     uint32_t n;    /**< `new_id` */
-    Array *a;      /**< `array`  */
+    wl_array *a;   /**< `array`  */
     int32_t h;     /**< `fd`     */
 };
 
@@ -45,9 +61,8 @@ using wl_dispatcher_func_t = int (*)(
     const void *user_data,
     void *target,
     uint32_t opcode,
-    const Message *msg,
-    union Argument *args);
+    const wl_message *msg,
+    union wl_argument *args);
 
-using LogFunc = void (*)(const char *fmt, va_list args);
+using wl_log_func_t = void (*)(const char *fmt, va_list args);
 
-} // namespace Wayland

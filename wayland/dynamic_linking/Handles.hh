@@ -1,9 +1,6 @@
 #pragma once
 
-namespace Wayland {
-struct Display;
-struct EventQueue;
-struct Interface;
-struct Object;
-struct Proxy;
-} // namespace Wayland
+struct wl_display;
+struct wl_event_queue;
+struct wl_object;
+struct wl_proxy;
