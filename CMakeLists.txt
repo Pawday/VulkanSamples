@@ -98,15 +98,6 @@ target_link_libraries(${PREF}Common
         ${PREF}Common.headers
         ${PREF}shaders
 )
-target_precompile_headers(${PREF}Common.headers INTERFACE
-    "<vulkan/vk_platform.h>"
-    "<vulkan/vulkan.hpp>"
-    "<vulkan/vulkan_enums.hpp>"
-    "<vulkan/vulkan_handles.hpp>"
-    "<vulkan/vulkan_raii.hpp>"
-    "<vulkan/vulkan_structs.hpp>"
-    "<vulkan/vulkan_to_string.hpp>"
-)
 
 add_application(${PREF}OffscreenDraw OffscreenDraw.cc)
 application_link_libraries(${PREF}OffscreenDraw PRIVATE ${PREF}Common.headers INTERFACE ${PREF}Common)
