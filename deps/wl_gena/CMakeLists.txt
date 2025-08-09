@@ -3,8 +3,9 @@ set(WL_GENA_PREF "${PREF}dep_")
 add_library(${WL_GENA_PREF}libexpat.headers ALIAS ${PREF}expat.headers)
 set(PREF ${WL_GENA_PREF})
 set(${WL_GENA_PREF}WL_GENA_FIND_PACKAGE_EXPAT OFF)
-set(${WL_GENA_PREF}WL_GENA_LIB_ONLY ON)
-add_subdirectory(src EXCLUDE_FROM_ALL)
+set(${WL_GENA_PREF}WL_GENA_BUILD_LIBS ON)
+set(${WL_GENA_PREF}WL_GENA_BUILD_EXEC OFF)
+add_subdirectory(src)
 set(PREF ${PREF_SAVE})
 
 list(APPEND HEADERS
@@ -19,5 +20,5 @@ target_sources(${PREF}wl_gena.headers INTERFACE
     FILES ${HEADERS}
 )
 
-target_sources(${PREF}wl_gena.static PRIVATE $<TARGET_OBJECTS:${WL_GENA_PREF}wl_gena.static>)
-target_sources(${PREF}wl_gena.shared PRIVATE $<TARGET_OBJECTS:${WL_GENA_PREF}wl_gena.shared>)
+target_sources(${PREF}wl_gena.static PRIVATE $<TARGET_OBJECTS:${WL_GENA_PREF}wl_gena.object>)
+target_sources(${PREF}wl_gena.shared PRIVATE $<TARGET_OBJECTS:${WL_GENA_PREF}wl_gena.PIC_object>)
