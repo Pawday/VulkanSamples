@@ -37,7 +37,7 @@ function(add_application TARGET_NAME)
     set(LIBRARY_TARGET_NAME "${TARGET_NAME}.applib")
     set(EXEC_TARGET_NAME "${TARGET_NAME}")
 
-    add_library(${LIBRARY_TARGET_NAME} STATIC ${ARGN})
+    add_library(${LIBRARY_TARGET_NAME} OBJECT ${ARGN})
     set_target_properties(${LIBRARY_TARGET_NAME} PROPERTIES EXCLUDE_FROM_ALL ON)
     target_link_libraries(${LIBRARY_TARGET_NAME} PRIVATE ${PREF}Launcher.headers)
     set(TARGET_TO_23 ${LIBRARY_TARGET_NAME})
