@@ -54,38 +54,12 @@ struct CPPTraceApplication
         return _args;
     }
 
-    void app_share_lifetime(std::shared_ptr<void> object)
-    {
-        _shared_objects.emplace_back(std::move(object));
-    }
-
     ~CPPTraceApplication()
     {
-        destruct_shared();
     }
 
   private:
     Application::LibcArgs _args;
-    std::vector<std::shared_ptr<void>> _shared_objects;
-
-    void destruct_shared()
-    {
-        std::vector<std::shared_ptr<void>> defered = std::move(_shared_objects);
-        std::reverse(std::begin(defered), std::end(defered));
-
-        for (auto &obj : defered) {
-            size_t users = obj.use_count();
-            auto addr = obj.get();
-            if (users > 1) {
-                std::cout << "Defered obj at " << addr << " still has "
-                          << std::to_string(users - 1) << "users" << '\n';
-                continue;
-            }
-
-            std::shared_ptr<void> null{obj};
-            obj.reset();
-        }
-    }
 };
 
 static_assert(sizeof(Application::ImplData) >= sizeof(CPPTraceApplication));
@@ -116,11 +90,6 @@ Application::~Application()
 std::optional<Application::LibcArgs> Application::get_libc_args()
 {
     return cast(_impl).args();
-}
-
-void Application::app_share_lifetime(std::shared_ptr<void> object)
-{
-    cast(_impl).app_share_lifetime(object);
 }
 
 #include <signal.h>

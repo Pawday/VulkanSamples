@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -24,8 +23,6 @@ struct Application
         std::vector<std::string> env;
     };
     std::optional<LibcArgs> get_libc_args();
-
-    void app_share_lifetime(std::shared_ptr<void> object);
 
     bool terminate_requested() const;
 
