@@ -146,17 +146,19 @@ list(APPEND SOURCES
 
 list(TRANSFORM SOURCES PREPEND "src/")
 
-target_sources(${PREF}glslang.static PRIVATE ${SOURCES})
-target_sources(${PREF}glslang.shared PRIVATE ${SOURCES})
+add_library(${PREF}glslang.object OBJECT ${SOURCES})
+add_library(${PREF}glslang.PIC_object OBJECT ${SOURCES})
 
-target_link_libraries(${PREF}glslang.static PRIVATE ${PREF}glslang.headers)
-target_link_libraries(${PREF}glslang.shared PRIVATE ${PREF}glslang.headers)
+set_target_properties(${PREF}glslang.PIC_object PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+target_link_libraries(${PREF}glslang.object PRIVATE ${PREF}glslang.headers)
+target_link_libraries(${PREF}glslang.PIC_object PRIVATE ${PREF}glslang.headers)
 
 set(PRIVATE_INCLUDES_GENEXPR $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
-target_include_directories(${PREF}glslang.static PRIVATE ${PRIVATE_INCLUDES_GENEXPR})
-target_include_directories(${PREF}glslang.shared PRIVATE ${PRIVATE_INCLUDES_GENEXPR})
+target_include_directories(${PREF}glslang.object PRIVATE ${PRIVATE_INCLUDES_GENEXPR})
+target_include_directories(${PREF}glslang.PIC_object PRIVATE ${PRIVATE_INCLUDES_GENEXPR})
 
 if(ENABLE_HLSL)
-    target_compile_definitions(${PREF}glslang.static PRIVATE ENABLE_HLSL)
-    target_compile_definitions(${PREF}glslang.shared PRIVATE ENABLE_HLSL)
+    target_compile_definitions(${PREF}glslang.object PRIVATE ENABLE_HLSL)
+    target_compile_definitions(${PREF}glslang.PIC_object PRIVATE ENABLE_HLSL)
 endif()

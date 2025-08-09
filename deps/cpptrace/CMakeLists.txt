@@ -2,8 +2,9 @@ if(NOT DEFINED ${PREF}CPPTRACE_UNWIND_WITH_LIBUNWIND)
     option("${PREF}CPPTRACE_UNWIND_WITH_LIBUNWIND" OFF)
 endif()
 
-set(USE_DWARF 1)
-
+if(NOT DEFINED ${PREF}CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
+    option("${PREF}CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF" OFF)
+endif()
 
 list(APPEND HEADERS
     basic.hpp
@@ -71,15 +72,17 @@ list(APPEND SOURCES
 set(CPPTRACE_SOURCES_PREFIX "src/src")
 list(TRANSFORM SOURCES PREPEND "${CPPTRACE_SOURCES_PREFIX}/")
 
-target_sources(${PREF}cpptrace.static PRIVATE ${SOURCES})
-target_sources(${PREF}cpptrace.shared PRIVATE ${SOURCES})
+add_library(${PREF}cpptrace.object OBJECT ${SOURCES})
+add_library(${PREF}cpptrace.PIC_object OBJECT ${SOURCES})
+
+set_target_properties(${PREF}cpptrace.PIC_object PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set(GENEXPR_PRIVATE_INCLUDE_DIR $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${CPPTRACE_SOURCES_PREFIX}>)
-target_include_directories(${PREF}cpptrace.static PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
-target_include_directories(${PREF}cpptrace.shared PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
+target_include_directories(${PREF}cpptrace.object PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
+target_include_directories(${PREF}cpptrace.PIC_object PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
 
-target_link_libraries(${PREF}cpptrace.static PRIVATE ${PREF}cpptrace.headers)
-target_link_libraries(${PREF}cpptrace.shared PRIVATE ${PREF}cpptrace.headers)
+target_link_libraries(${PREF}cpptrace.object PRIVATE ${PREF}cpptrace.headers)
+target_link_libraries(${PREF}cpptrace.PIC_object PRIVATE ${PREF}cpptrace.headers)
 
 list(APPEND DEFINES CPPTRACE_DEMANGLE_WITH_CXXABI)
 
@@ -92,25 +95,22 @@ else()
     list(APPEND DEFINES CPPTRACE_UNWIND_WITH_NOTHING)
 endif()
 
-if(USE_DWARF)
+if(${PREF}CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
     list(APPEND DEFINES CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
 else()
     list(APPEND DEFINES CPPTRACE_GET_SYMBOLS_WITH_NOTHING)
 endif()
 
-target_compile_definitions(${PREF}cpptrace.static PRIVATE ${DEFINES})
-target_compile_definitions(${PREF}cpptrace.shared PRIVATE ${DEFINES})
+target_compile_definitions(${PREF}cpptrace.object PRIVATE ${DEFINES})
+target_compile_definitions(${PREF}cpptrace.PIC_object PRIVATE ${DEFINES})
 
-if(USE_DWARF)
-    target_link_libraries(${PREF}cpptrace.static PRIVATE ${PREF}libdwarf.headers)
-    target_link_libraries(${PREF}cpptrace.shared PRIVATE ${PREF}libdwarf.headers)
-
-    target_link_libraries(${PREF}cpptrace.static INTERFACE ${PREF}libdwarf.static)
-    target_link_libraries(${PREF}cpptrace.shared INTERFACE ${PREF}libdwarf.shared)
+if(${PREF}CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
+    target_link_libraries(${PREF}cpptrace.object PRIVATE ${PREF}dwarf.headers)
+    target_link_libraries(${PREF}cpptrace.PIC_object PRIVATE ${PREF}dwarf.headers)
 endif()
 
 if(${PREF}CPPTRACE_UNWIND_WITH_LIBUNWIND)
     find_library(${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND unwind REQUIRED)
-    target_link_libraries(${PREF}cpptrace.static PRIVATE ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND})
-    target_link_libraries(${PREF}cpptrace.shared PRIVATE ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND})
+    target_link_libraries(${PREF}cpptrace.object PRIVATE ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND})
+    target_link_libraries(${PREF}cpptrace.PIC_object PRIVATE ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND})
 endif()

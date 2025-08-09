@@ -1,15 +1,7 @@
 macro(declare_deps)
 
-list(APPEND STATIC_LIBS
-    libdwarf
-    cpptrace
-    expat
-    wl_gena
-    glslang
-)
-
-list(APPEND SHARED_LIBS
-    libdwarf
+list(APPEND BINARY_LIBS
+    dwarf
     cpptrace
     expat
     wl_gena
@@ -19,10 +11,7 @@ list(APPEND SHARED_LIBS
 list(APPEND HEADER_LIBS
     vulkan
     wayland_client
-)
-
-list(APPEND HEADER_LIBS
-    ${STATIC_LIBS}
+    ${BINARY_LIBS}
 )
 
 foreach(H_TARGET ${HEADER_LIBS})
@@ -30,15 +19,16 @@ foreach(H_TARGET ${HEADER_LIBS})
     add_library(${TGT} INTERFACE)
 endforeach()
 
-foreach(S_TARGET ${STATIC_LIBS})
-    set(TGT "${PREF}${S_TARGET}.static")
-    add_library(${TGT} STATIC)
+foreach(BIN_TARGET ${BINARY_LIBS})
+    set(TGT "${PREF}${BIN_TARGET}")
+    add_library(${TGT}.static STATIC $<TARGET_OBJECTS:${TGT}.object>)
+    add_library(${TGT}.shared SHARED $<TARGET_OBJECTS:${TGT}.PIC_object>)
 endforeach()
 
-foreach(D_TARGET ${SHARED_LIBS})
-    set(TGT "${PREF}${D_TARGET}.shared")
-    add_library(${TGT} SHARED)
-endforeach()
+if(${PREF}CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
+    target_link_libraries(${PREF}cpptrace.static PRIVATE ${PREF}dwarf.static)
+    target_link_libraries(${PREF}cpptrace.shared PRIVATE ${PREF}dwarf.shared)
+endif()
 
 endmacro()
 

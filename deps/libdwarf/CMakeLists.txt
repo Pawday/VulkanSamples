@@ -1,6 +1,6 @@
 set(LIBDWARF_SOURCES_PREFIX "src/src/lib/libdwarf")
 
-target_sources(${PREF}libdwarf.headers INTERFACE
+target_sources(${PREF}dwarf.headers INTERFACE
     FILE_SET headers
     TYPE HEADERS
     BASE_DIRS "${LIBDWARF_SOURCES_PREFIX}"
@@ -76,9 +76,11 @@ list(APPEND SOURCES
 )
 list(TRANSFORM SOURCES PREPEND "${LIBDWARF_SOURCES_PREFIX}/")
 
-target_sources(${PREF}libdwarf.static PRIVATE ${SOURCES})
-target_sources(${PREF}libdwarf.shared PRIVATE ${SOURCES})
+add_library(${PREF}dwarf.object OBJECT ${SOURCES})
+add_library(${PREF}dwarf.PIC_object OBJECT ${SOURCES})
+
+set_target_properties(${PREF}dwarf.PIC_object PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set(GENEXPR_PRIVATE_INCLUDE_DIR $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>)
-target_include_directories(${PREF}libdwarf.static PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
-target_include_directories(${PREF}libdwarf.shared PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
+target_include_directories(${PREF}dwarf.object PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
+target_include_directories(${PREF}dwarf.PIC_object PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
