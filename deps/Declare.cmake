@@ -23,6 +23,7 @@ foreach(BIN_TARGET ${BINARY_LIBS})
     set(TGT "${PREF}${BIN_TARGET}")
     add_library(${TGT}.static STATIC $<TARGET_OBJECTS:${TGT}.object>)
     add_library(${TGT}.shared SHARED $<TARGET_OBJECTS:${TGT}.PIC_object>)
+    set_target_properties(${TGT}.shared PROPERTIES OUTPUT_NAME ${TGT})
 endforeach()
 
 if(${PREF}CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
