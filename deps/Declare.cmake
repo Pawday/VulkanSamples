@@ -31,6 +31,12 @@ if(${PREF}CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF)
     target_link_libraries(${PREF}cpptrace.shared PRIVATE ${PREF}dwarf.shared)
 endif()
 
+if(${PREF}CPPTRACE_UNWIND_WITH_LIBUNWIND)
+    find_library(${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND unwind REQUIRED)
+    target_link_libraries(${PREF}cpptrace.static PRIVATE ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND})
+    target_link_libraries(${PREF}cpptrace.shared PRIVATE ${${PREF}LIB_CPPTRACE_LIBUNWIND_BACKEND})
+endif()
+
 endmacro()
 
 if(NOT TARGET ${PREF}deps_delclare_once_guard)
