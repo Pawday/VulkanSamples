@@ -1,4 +1,9 @@
-set(SOURCES_PREFIX "src/expat/lib")
+if(NOT DEFINED "${PREF}EXPAT_SOURCE_DIR")
+    set(${PREF}EXPAT_SOURCE_DIR "?" CACHE PATH "Sources location of expat library")
+endif()
+set(SOURCE_DIR ${${PREF}EXPAT_SOURCE_DIR})
+
+set(SOURCES_PREFIX "${SOURCE_DIR}/expat/lib")
 
 list(APPEND HEADERS
     expat.h

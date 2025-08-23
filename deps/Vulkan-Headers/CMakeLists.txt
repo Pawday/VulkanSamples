@@ -1,3 +1,8 @@
+if(NOT DEFINED "${PREF}VULKAN_HEADERS_SOURCE_DIR")
+    set(${PREF}VULKAN_HEADERS_SOURCE_DIR "?" CACHE PATH "Sources location of Vulkan-Headers")
+endif()
+set(SOURCE_DIR ${${PREF}VULKAN_HEADERS_SOURCE_DIR})
+
 list(APPEND HEADERS
     vulkan_directfb.h
     vulkan_xlib.h
@@ -48,12 +53,12 @@ list(APPEND VK_VIDEO_HEADERS
     vulkan_video_codecs_common.h
 )
 
-list(TRANSFORM HEADERS PREPEND "src/include/vulkan/")
-list(TRANSFORM VK_VIDEO_HEADERS PREPEND "src/include/vk_video/")
+list(TRANSFORM HEADERS PREPEND "${SOURCE_DIR}/include/vulkan/")
+list(TRANSFORM VK_VIDEO_HEADERS PREPEND "${SOURCE_DIR}/include/vk_video/")
 
 target_sources(${PREF}vulkan.headers INTERFACE
     FILE_SET headers
     TYPE HEADERS
-    BASE_DIRS "src/include"
+    BASE_DIRS "${SOURCE_DIR}/include"
     FILES ${HEADERS} ${VK_VIDEO_HEADERS}
 )

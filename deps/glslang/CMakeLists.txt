@@ -1,16 +1,19 @@
-include("${CMAKE_CURRENT_SOURCE_DIR}/src/parse_version.cmake")
+if(NOT DEFINED "${PREF}GLSLANG_SOURCE_DIR")
+    set(${PREF}GLSLANG_SOURCE_DIR "?" CACHE PATH "Sources location of glslang")
+endif()
+set(SOURCE_DIR ${${PREF}GLSLANG_SOURCE_DIR})
 
 set(PROJECT "${PREF}_GLSLANG")
-set(GLSLANG_CHANGES_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/CHANGES.md")
-include(${CMAKE_CURRENT_SOURCE_DIR}/src/parse_version.cmake)
+set(GLSLANG_CHANGES_FILE "${SOURCE_DIR}/CHANGES.md")
+include(${SOURCE_DIR}/parse_version.cmake)
 parse_version(${GLSLANG_CHANGES_FILE} GLSLANG)
 function(parse_version)
     message(FATAL_ERROR "Overwritten by glslang function [parse_version]")
 endfunction()
 
 set(GLSLANG_GENERATED_INCLUDEDIR "${CMAKE_CURRENT_BINARY_DIR}/include")
-set(GLSLANG_CHANGES_FILE         "${CMAKE_CURRENT_SOURCE_DIR}/src/CHANGES.md")
-set(GLSLANG_BUILD_INFO_H_TMPL    "${CMAKE_CURRENT_SOURCE_DIR}/src/build_info.h.tmpl")
+set(GLSLANG_CHANGES_FILE         "${SOURCE_DIR}/CHANGES.md")
+set(GLSLANG_BUILD_INFO_H_TMPL    "${SOURCE_DIR}/build_info.h.tmpl")
 set(GLSLANG_BUILD_INFO_H         "${GLSLANG_GENERATED_INCLUDEDIR}/glslang/build_info.h")
 
 set(major  ${GLSLANG_VERSION_MAJOR})
@@ -25,17 +28,17 @@ list(APPEND BASIC_HEADERS
     glslang_c_shader_types.h
     visibility.h
 )
-list(TRANSFORM BASIC_HEADERS PREPEND "src/glslang/Include/")
+list(TRANSFORM BASIC_HEADERS PREPEND "${SOURCE_DIR}/glslang/Include/")
 
 list(APPEND PUBLIC_HEADERS
     resource_limits_c.h
 )
-list(TRANSFORM PUBLIC_HEADERS PREPEND "src/glslang/Public/")
+list(TRANSFORM PUBLIC_HEADERS PREPEND "${SOURCE_DIR}/glslang/Public/")
 
 target_sources(${PREF}glslang.headers INTERFACE
     FILE_SET headers
     TYPE HEADERS
-    BASE_DIRS "src/"
+    BASE_DIRS "${SOURCE_DIR}"
     FILES ${PUBLIC_HEADERS} ${PUBLIC_HEADERS}
 )
 
@@ -144,7 +147,7 @@ list(APPEND SOURCES
     ${GLSLANG_SPIRV_SOURCES}
 )
 
-list(TRANSFORM SOURCES PREPEND "src/")
+list(TRANSFORM SOURCES PREPEND "${SOURCE_DIR}/")
 
 add_library(${PREF}glslang.object OBJECT ${SOURCES})
 add_library(${PREF}glslang.PIC_object OBJECT ${SOURCES})

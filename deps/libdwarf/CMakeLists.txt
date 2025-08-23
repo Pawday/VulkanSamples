@@ -1,4 +1,9 @@
-set(LIBDWARF_SOURCES_PREFIX "src/src/lib/libdwarf")
+if(NOT DEFINED "${PREF}LIBDWARF_SOURCE_DIR")
+    set(${PREF}LIBDWARF_SOURCE_DIR "?" CACHE PATH "Sources location of dwarf library")
+endif()
+set(SOURCE_DIR ${${PREF}LIBDWARF_SOURCE_DIR})
+
+set(LIBDWARF_SOURCES_PREFIX "${SOURCE_DIR}/src/lib/libdwarf")
 
 target_sources(${PREF}dwarf.headers INTERFACE
     FILE_SET headers
@@ -10,7 +15,7 @@ target_sources(${PREF}dwarf.headers INTERFACE
 set(HAVE_STDINT_H ON)
 set(HAVE_UNISTD_H ON)
 set(HAVE_FCNTL_H ON)
-configure_file("src/cmake/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
+configure_file("${SOURCE_DIR}/cmake/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
 
 list(APPEND SOURCES
     dwarf_abbrev.c

@@ -1,3 +1,8 @@
+if(NOT DEFINED "${PREF}CPPTRACE_SOURCE_DIR")
+    set(${PREF}CPPTRACE_SOURCE_DIR "?" CACHE PATH "Sources location of cpptrace library")
+endif()
+set(SOURCE_DIR ${${PREF}CPPTRACE_SOURCE_DIR})
+
 if(NOT DEFINED ${PREF}CPPTRACE_UNWIND_WITH_LIBUNWIND)
     option("${PREF}CPPTRACE_UNWIND_WITH_LIBUNWIND" OFF)
 endif()
@@ -17,12 +22,12 @@ list(APPEND HEADERS
     io.hpp
     utils.hpp
 )
-list(TRANSFORM HEADERS PREPEND "src/include/cpptrace/")
+list(TRANSFORM HEADERS PREPEND "${SOURCE_DIR}/include/cpptrace/")
 
 target_sources(${PREF}cpptrace.headers INTERFACE
     FILE_SET headers
     TYPE HEADERS
-    BASE_DIRS "src/include"
+    BASE_DIRS "${SOURCE_DIR}/include"
     FILES ${HEADERS}
 )
 
@@ -69,7 +74,7 @@ list(APPEND SOURCES
     utils/utils.cpp
     platform/dbghelp_utils.cpp
 )
-set(CPPTRACE_SOURCES_PREFIX "src/src")
+set(CPPTRACE_SOURCES_PREFIX "${SOURCE_DIR}/src")
 list(TRANSFORM SOURCES PREPEND "${CPPTRACE_SOURCES_PREFIX}/")
 
 add_library(${PREF}cpptrace.object OBJECT ${SOURCES})
@@ -77,7 +82,7 @@ add_library(${PREF}cpptrace.PIC_object OBJECT ${SOURCES})
 
 set_target_properties(${PREF}cpptrace.PIC_object PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-set(GENEXPR_PRIVATE_INCLUDE_DIR $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${CPPTRACE_SOURCES_PREFIX}>)
+set(GENEXPR_PRIVATE_INCLUDE_DIR $<BUILD_INTERFACE:${CPPTRACE_SOURCES_PREFIX}>)
 target_include_directories(${PREF}cpptrace.object PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
 target_include_directories(${PREF}cpptrace.PIC_object PRIVATE ${GENEXPR_PRIVATE_INCLUDE_DIR})
 
